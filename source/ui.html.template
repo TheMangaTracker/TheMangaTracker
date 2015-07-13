@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html ng-app="TheMangaTracker">
+    <head>
+        <script src="thirdparty/angular.js"></script>
+        <script src="thirdparty/angular-route.js"></script>
+        <script src="ui.js"></script>
+      % for script in TARGET.glob('ui/**/*.js'):
+        <script src="${ script.relative_to(TARGET) }"></script>
+      % endfor
+        <title>{{ title }}</title>
+    </head>
+    <body>
+        <div ng-view></div>
+    </body>
+</html>
+

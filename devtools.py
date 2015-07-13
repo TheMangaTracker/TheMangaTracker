@@ -70,12 +70,25 @@ def get_image_size(path):
     assert vertical_size == size
     return size
 
+from mako.lookup import TemplateLookup
+from mako.exceptions import TemplateLookupException
+from mako.template import Template
+
+class MyTemplateLookup(TemplateLookup):
+    def __init__(self, path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__path = path
+
+    def get_template(self, uri):
+        path = Path(uri)
+        if not path.exists():
+            raise TemplateLookupException()
+        return Template(filename=str(path), lookup=MyTemplateLookup(path))
 
 def render(target, template, **variables):
-    from mako.template import Template
-
     target = Path(target)
-    template = Template(filename=str(template))
+    template = Template(filename=str(template), lookup=MyTemplateLookup(template))
+    variables.update(globals())
     result = template.render(**variables)
     make_parent_dirs(target)
     with target.open('w', encoding='UTF-8') as target_file:
