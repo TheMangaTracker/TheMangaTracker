@@ -5,7 +5,7 @@
     "version": "${ version }",
     "description": "For all your manga tracking needs!",
     "icons": {
-      % for size, path in sorted(icons, key=lambda i: i[0]):
+      % for size, path in icons:
         "${ size }": "${ path }"${ '' if loop.last else ',' }
       % endfor
     },
@@ -17,7 +17,9 @@
     "background": {
         "persistent": false,
         "scripts": [
-            "background.js"
+          % for script in scripts:
+            "${ script }"${ '' if loop.last else ',' }
+          % endfor
         ]
     },
 
