@@ -1,18 +1,34 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# coding=UTF-8
 
-from builder import Builder
+from PIL import Image
+from devtools import *
 
-b = Builder('test_build',
-    name="The Manga Tracker",
-    version="0.0.0.0",
-    description="Read all your manga in one place and track your progress and updates too!",
-    icons=[
-        (128, "icons/128.png"),
-    ])
+for thing, url in [
+    ('jquery.js', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js'),
+    ('angular.js', 'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.2/angular.js'),
+]: download(TARGET / 'thirdparty' / thing, url)
 
-b.clean()
-b.render("**/*.html")
-b.render("**/*.json")
-b.render("**/*.js")
-b.copy("**/*.png")
+for path in ORIGIN.glob('**/*.js'):
+    if path.is_file():
+        copy(TARGET / path.relative_to(ORIGIN), path)    
+  
+copy(TARGET / 'icon.png', ORIGIN / 'icon.png')
+
+with (ORIGIN / 'version').open(encoding='UTF-8') as version_file:
+    version = version_file.read().strip()
+
+icons = [
+    (get_image_size(TARGET / 'icon.png'), 'icon.png')
+] 
+
+render(TARGET / 'manifest.json', ORIGIN / 'manifest.json.template',
+       version=version,
+       icons=icons)
+
+scripts = [s.relative_to(TARGET) for s in TARGET.glob('**/*.js')]
+
+render(TARGET / 'index.html', ORIGIN / 'index.html.template',
+       scripts=scripts)
+
+finish()

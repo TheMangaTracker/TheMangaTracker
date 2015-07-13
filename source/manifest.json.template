@@ -1,0 +1,25 @@
+{
+    "manifest_version": 2,
+
+    "name": "The Manga Tracker",  
+    "version": "${ version }",
+    "description": "For all your manga tracking needs!",
+    "icons": {
+      % for size, path in sorted(icons, key=lambda i: i[0]):
+        "${ size }": "${ path }"${ '' if loop.last else ',' }
+      % endfor
+    },
+
+    "permissions": [
+        "storage"
+    ],
+
+    "background": {
+        "persistent": false,
+        "scripts": [
+            "background.js"
+        ]
+    },
+
+    "browser_action": {}
+}
