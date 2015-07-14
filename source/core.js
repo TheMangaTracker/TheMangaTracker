@@ -3,11 +3,11 @@
 
     var manifest = chrome.runtime.getManifest();
 
-    chrome.browserAction.setTitle({ title: manifest.name + ' ' + manifest.version });
+    chrome.browserAction.setTitle({ title: manifest.name });
     var get_icon_for = function(desired_size) {
         var max_size = undefined;
         for (var size in manifest.icons) {
-            if (size == desired_size) {
+            if (Number(size) == desired_size) {
                 return manifest.icons[size];    
             }
             if (max_size === undefined || Number(size) > Number(max_size)) {

@@ -1,12 +1,12 @@
 'use strict';
 
-angular.module('TheMangaTracker', [
+angular.module('ui', [
     'ngRoute',
 ])
 .config(['$routeProvider',
 function( $routeProvider ) {
     $routeProvider
-    .when('/', { redirectTo: 'my_manga' })
+    .when('/', { redirectTo: '/my_manga' })
     .otherwise({ redirectTo: '/' });
 }]);
 

@@ -3,6 +3,7 @@
 __all__ = [
     'ORIGIN',
     'TARGET',
+    'VERSION',
     'remove',
     'download',
     'copy',
@@ -94,11 +95,11 @@ def make_parent_dirs(path):
         else:
             parent.mkdir()
 
-chdir(str(Path(__file__).parent))
-
 arg_parser = ArgumentParser()
 arg_parser.add_argument('target', type=Path, nargs='?', default='build', help='Directory to place build results into.')
 args = arg_parser.parse_args()
+
+chdir(str(Path(__file__).parent))
 
 TMP = Path('.tmp')
 
@@ -106,4 +107,6 @@ ORIGIN = TMP / 'origin'
 TARGET = TMP / 'target'
 
 copy(ORIGIN, 'source')
+
+VERSION = (ORIGIN / 'version').open(encoding='UTF-8').read().strip() 
 

@@ -1,16 +1,13 @@
 <!DOCTYPE html>
-<html ng-app="TheMangaTracker">
+<html ng-app="ui">
     <head>
-        <script src="thirdparty/angular.js"></script>
-        <script src="thirdparty/angular-route.js"></script>
-        <script src="ui.js"></script>
-      % for script in TARGET.glob('ui/**/*.js'):
-        <script src="${ script.relative_to(TARGET) }"></script>
+      % for script in ['thirdparty/angular.js', 'thirdparty/angular-route.js'] + ['ui.js'] + [s.relative_to(TARGET) for s in TARGET.glob('ui/**/*.js')]:
+        <script src="${ script }"></script>
       % endfor
         <title>{{ title }}</title>
     </head>
     <body>
-        <div ng-view></div>
+        <ng-view></ng-view>
     </body>
 </html>
 

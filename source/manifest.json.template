@@ -2,13 +2,9 @@
     "manifest_version": 2,
 
     "name": "The Manga Tracker",  
-    "version": "${ version }",
+    "version": "${ VERSION }",
     "description": "For all your manga tracking needs!",
-    "icons": {
-      % for size, path in icons:
-        "${ size }": "${ path }"${ '' if loop.last else ',' }
-      % endfor
-    },
+    "icons": { "${ get_image_size(TARGET / 'icon.png') }": "icon.png" },
 
     "permissions": [
         "storage"
@@ -17,7 +13,7 @@
     "background": {
         "persistent": false,
         "scripts": [
-          % for script in scripts:
+          % for script in ['thirdparty/jquery.js'] + ['core.js'] + [s.relative_to(TARGET) for s in TARGET.glob('core/**/*.js')]:
             "${ script }"${ '' if loop.last else ',' }
           % endfor
         ]

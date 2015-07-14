@@ -1,6 +1,6 @@
 'use strict';
 
-angular.module('TheMangaTracker')
+angular.module('ui')
 .config(['$routeProvider', function($routeProvider) {
     $routeProvider
     .when('/my_manga', { templateUrl: '/ui/my_manga.html', controller: 'my_manga' });
