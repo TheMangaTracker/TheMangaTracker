@@ -9,24 +9,14 @@ __all__ = [
     'get_image_size',
     'render',
     'finish',
-    'make_parent_dirs',
 ]
 
-
+from os import chdir
 from pathlib import Path
 from argparse import ArgumentParser
-import os
-
-os.chdir(str(Path(__file__).parent))
-
-arg_parser = ArgumentParser()
-arg_parser.add_argument('target', type=Path, nargs='?', default='build', help='Directory to place build results into.')
-args = arg_parser.parse_args()
-
-TMP = Path('.tmp')
-
-ORIGIN = TMP / 'origin'
-TARGET = TMP / 'target'
+from mako.lookup import TemplateLookup
+from mako.exceptions import TemplateLookupException
+from mako.template import Template
 
 def remove(what):
     what = Path(what)
@@ -70,9 +60,20 @@ def get_image_size(path):
     assert vertical_size == size
     return size
 
-from mako.lookup import TemplateLookup
-from mako.exceptions import TemplateLookupException
-from mako.template import Template
+def render(target, template, **variables):
+    target = Path(target)
+    template = Template(filename=str(template), lookup=MyTemplateLookup(template))
+    for k, v in globals().items():
+        if k in __all__ and k not in variables:
+            variables[k] = v
+    result = template.render(**variables)
+    make_parent_dirs(target)
+    with target.open('w', encoding='UTF-8') as target_file:
+        target_file.write(result)
+
+def finish():
+    copy(args.target, TARGET)
+    remove(TMP)
 
 class MyTemplateLookup(TemplateLookup):
     def __init__(self, path, *args, **kwargs):
@@ -85,21 +86,6 @@ class MyTemplateLookup(TemplateLookup):
             raise TemplateLookupException()
         return Template(filename=str(path), lookup=MyTemplateLookup(path))
 
-def render(target, template, **variables):
-    target = Path(target)
-    template = Template(filename=str(template), lookup=MyTemplateLookup(template))
-    variables.update(globals())
-    result = template.render(**variables)
-    make_parent_dirs(target)
-    with target.open('w', encoding='UTF-8') as target_file:
-        target_file.write(result)
-
-copy(ORIGIN, 'source')
-
-def finish():
-    copy(args.target, TARGET)
-    remove(TMP)
-
 def make_parent_dirs(path):
     path = Path(path)
     for parent in reversed(path.parents):
@@ -107,3 +93,17 @@ def make_parent_dirs(path):
             assert parent.is_dir()
         else:
             parent.mkdir()
+
+chdir(str(Path(__file__).parent))
+
+arg_parser = ArgumentParser()
+arg_parser.add_argument('target', type=Path, nargs='?', default='build', help='Directory to place build results into.')
+args = arg_parser.parse_args()
+
+TMP = Path('.tmp')
+
+ORIGIN = TMP / 'origin'
+TARGET = TMP / 'target'
+
+copy(ORIGIN, 'source')
+
