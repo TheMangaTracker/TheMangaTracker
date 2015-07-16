@@ -7,7 +7,6 @@ from devtools import *
 for thing, url in [
     ('jquery.js', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.js'),
     ('angular.js', 'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.2/angular.js'),
-    ('angular-route.js', 'https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.4.2/angular-route.js'),
 ]: download(TARGET / 'thirdparty' / thing, url)
 
 for path in chain(ORIGIN.glob('**/*.js'), ORIGIN.glob('**/*.html'), ORIGIN.glob('**/*.png')):

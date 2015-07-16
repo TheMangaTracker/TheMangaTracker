@@ -23,7 +23,7 @@
         }
     });
     chrome.browserAction.onClicked.addListener(function(_tab) {
-        chrome.tabs.create({ url: chrome.extension.getURL('ui.html') });
+        chrome.tabs.create({ url: chrome.extension.getURL('my_manga.html') });
     });
 
 })();
