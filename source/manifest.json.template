@@ -2,7 +2,7 @@
     "manifest_version": 2,
 
     "name": "The Manga Tracker",  
-    "version": "${ VERSION }",
+    "version": "${ get_version() }",
     "description": "For all your manga tracking needs!",
     "icons": { "${ get_image_size(TARGET / 'icon.png') }": "icon.png" },
 
