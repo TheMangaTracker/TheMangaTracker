@@ -15,7 +15,7 @@ from ._remove import *
 
 tools = {
     'SOURCE': SOURCE,
-    'TARGET': TARGET,
+    'OUTPUT': OUTPUT,
     'get_version': get_version,
     'download': download,
     'copy': copy,

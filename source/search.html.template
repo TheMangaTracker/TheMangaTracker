@@ -3,10 +3,10 @@
     <head>
         <script src="thirdparty/jquery.js"></script>
         <script src="thirdparty/angular.js"></script>
-      % for script in [s.relative_to(TARGET) for s in TARGET.glob('common/**/*.js')]:
+      % for script in [s.relative_to(OUTPUT) for s in OUTPUT.glob('common/**/*.js')]:
         <script src="${ script }" charset="UTF-8"></script>
       % endfor
-      % for script in ['hosts.js'] + [s.relative_to(TARGET) for s in TARGET.glob('hosts/**/*.js')]:
+      % for script in ['hosts.js'] + [s.relative_to(OUTPUT) for s in OUTPUT.glob('hosts/**/*.js')]:
         <script src="${ script }" charset="UTF-8"></script>
       % endfor
         <script src="search.js" charset="UTF-8"></script>

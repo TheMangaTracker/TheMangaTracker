@@ -1,32 +1,40 @@
 # coding: UTF-8
 
 __all__ = [
-    'begin',
-    'end',
+    'finish',
 ]
 
 from os import chdir
 from pathlib import Path
+import atexit
 
 from ._tools import *
 from ._locations import *
 from ._copy import *
 from ._remove import *
+from ._run import *
+from ._arg_parser import *
 
-def begin():
-    global cwd
+arg_parser.add_arg(
+    'output', type=Path,
+    nargs='?', default=Path('output'),
+    help='build output path'
+)
+
+args = arg_parser.parse_args()
     
-    cwd = Path.cwd()
-    chdir(str(Path(__file__).parents[1]))
-    
-    remove(TMP)
-    copy(SOURCE, 'source')
+def finish():
+    copy(args.output, OUTPUT)
 
-def end():
-    copy('target', TARGET)
-    remove(TMP)
-
-    chdir(str(cwd))
+    run()
 
 globals().update(tools)
-__all__ += list(tools.keys())
+__all__.extend(tools.keys())
+
+remove(TMP)
+copy(SOURCE, Path(__file__).parents[1] / 'source')
+atexit.register(lambda: remove(TMP))
+
+cwd = Path.cwd()
+chdir(str(Path(__file__).parents[1]))
+atexit.register(lambda: chdir(str(cwd)))
