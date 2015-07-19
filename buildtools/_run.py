@@ -14,7 +14,6 @@ from ._arg_parser import *
 from ._copy import *
 from ._remove import *
 
-
 system = platform.system()
 
 if system == 'Linux':
@@ -47,7 +46,7 @@ def run():
         browser,
         '--user-data-dir=' + str(user_data_dir),
         '--no-first-run',
-        '--load-extension=' + str(args.output),
+        '--load-extension=' + str(OUTPUT),
     ])
     
     remove(TMP / 'user_data_dir')

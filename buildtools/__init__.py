@@ -13,19 +13,10 @@ from ._locations import *
 from ._copy import *
 from ._remove import *
 from ._run import *
-from ._arg_parser import *
-
-arg_parser.add_arg(
-    'output', type=Path,
-    nargs='?', default=Path('output'),
-    help='build output path'
-)
-
-args = arg_parser.parse_args()
+from ._output import *
     
 def finish():
-    copy(args.output, OUTPUT)
-
+    output()
     run()
 
 globals().update(tools)
