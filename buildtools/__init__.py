@@ -22,9 +22,7 @@ def finish():
 globals().update(tools)
 __all__.extend(tools.keys())
 
-remove(TMP)
 copy(SOURCE, Path(__file__).parents[1] / 'source')
-atexit.register(lambda: remove(TMP))
 
 cwd = Path.cwd()
 chdir(str(Path(__file__).parents[1]))

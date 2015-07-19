@@ -6,9 +6,15 @@ __all__ = [
     'OUTPUT',
 ]
 
+import atexit
+from tempfile import mkdtemp
 from pathlib import Path
 
-TMP = Path(__file__).parents[1] / '.buildtmp'
+from ._remove import *
+
+TMP = Path(mkdtemp(dir=str(Path(__file__).parents[1]), prefix='.buildtmp-'))
+atexit.register(lambda: remove(TMP))
+
 SOURCE = TMP / 'source'
 OUTPUT = TMP / 'output'
 
