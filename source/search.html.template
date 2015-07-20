@@ -2,7 +2,7 @@
 <html ng-controller="page">
     <head>
         <script src="/thirdparty/require.js" data-main="search.js"></script>
-        <title>{{ title }} - {{ chrome.runtime.getManifest().name }}</title>
+        <title>{{ title }} - ${ CONFIG['name'] }</title>
     </head>
     <body>
         <input type="text" data-ng-model="name"></input>

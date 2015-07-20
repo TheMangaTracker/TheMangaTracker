@@ -5,7 +5,7 @@ __all__ = [
 ]
 
 from ._locations import *
-from ._get_version import *
+from ._config import *
 from ._download import *
 from ._copy import *
 from ._render import *
@@ -17,7 +17,7 @@ from ._remove import *
 tools = {
     'SOURCE': SOURCE,
     'OUTPUT': OUTPUT,
-    'get_version': get_version,
+    'CONFIG': CONFIG,
     'download': download,
     'copy': copy,
     'render': render,

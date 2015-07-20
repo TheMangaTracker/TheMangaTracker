@@ -1,9 +1,9 @@
 {
     "manifest_version": 2,
 
-    "name": "The Manga Tracker",  
-    "version": "${ get_version() }",
-    "description": "For all your manga tracking needs!",
+    "name": "${ CONFIG['name'] }",  
+    "version": "${ CONFIG['version'] }",
+    "description": "${ CONFIG['description'] }",
     "icons": { "${ get_image_size(OUTPUT / 'icon.png') }": "icon.png" },
 
     "permissions": [

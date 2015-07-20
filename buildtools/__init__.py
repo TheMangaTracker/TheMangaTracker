@@ -22,8 +22,6 @@ def finish():
 globals().update(tools)
 __all__.extend(tools.keys())
 
-copy(SOURCE, Path(__file__).parents[1] / 'source')
-
 cwd = Path.cwd()
 chdir(str(Path(__file__).parents[1]))
 atexit.register(lambda: chdir(str(cwd)))
