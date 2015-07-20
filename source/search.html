@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html ng-controller="page">
+    <head>
+        <script src="/thirdparty/require.js" data-main="search.js"></script>
+        <title>{{ title }} - {{ chrome.runtime.getManifest().name }}</title>
+    </head>
+    <body>
+        <input type="text" data-ng-model="name"></input>
+        <button data-ng-click="search()">Search!</button>
+        <div data-ng-repeat="url in urls">
+            <a href="{{ url }}">{{ url }}</a>
+        </div>
+    </body>
+</html>
+
