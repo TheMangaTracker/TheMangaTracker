@@ -4,13 +4,16 @@
 from itertools import chain
 from buildtools import *
 
-for thing, url in read_yaml(SOURCE / 'thirdparty.yaml').items():
-    download(OUTPUT / 'thirdparty' / thing, url)
+CONFIG = read_yaml('config.yaml')
 
-for path in chain(SOURCE.glob('**/*.js'), SOURCE.glob('**/*.html'), SOURCE.glob('**/*.png')):
-    copy(OUTPUT / path.relative_to(SOURCE), path)    
+for file, url in read_yaml('thirdparty.yaml').items():
+    download('thirdparty' / Path(file), url)
 
-for path in SOURCE.glob('**/*.template'):
-    render(OUTPUT / (path.parent / path.stem).relative_to(SOURCE), path)
+for template in glob('**/*.template'):
+    render(template.parent / template.stem, template,
+           CONFIG=CONFIG)
+
+for file in glob('**/*.yaml') + glob('**/*.template'):
+    remove(file)
 
 finish()

@@ -11,11 +11,11 @@ from mako.template import Template
 
 from ._make_parents import *
 
-def render(target, source, **variables):
+def render(target, source=None, **variables):
     from ._tools import tools
 
     target = Path(target)
-    source = Path(source)
+    source = target if source is None else Path(source) 
 
     template = Template(filename=str(source))
     

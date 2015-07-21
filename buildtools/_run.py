@@ -8,8 +8,8 @@ import platform
 import subprocess
 from pathlib import Path
 from os.path import expanduser
+from tempfile import mkdtemp
 
-from ._locations import *
 from ._arg_parser import *
 from ._copy import *
 from ._remove import *
@@ -30,24 +30,22 @@ arg_parser.add_arg(
     help='run extension in browser after build'
 )
 
-def run():
-    args = arg_parser.parse_args()
-
+def run(args):
     browser = args.run
 
     if browser is None:
         return
 
-    user_data_dir = TMP / 'user_data_dir'
+    user_data_dir = Path(mkdtemp())
+    try:
+        copy(user_data_dir / 'First Run', Path(browsers[browser]) / 'First Run')
+       
+        subprocess.call([
+            browser,
+            '--user-data-dir=' + str(user_data_dir),
+            '--no-first-run',
+            '--load-extension=.',
+        ])
 
-    copy(user_data_dir / 'First Run', Path(browsers[browser]) / 'First Run')
-   
-    subprocess.call([
-        browser,
-        '--user-data-dir=' + str(user_data_dir),
-        '--no-first-run',
-        '--load-extension=' + str(OUTPUT),
-    ])
-    
-    remove(TMP / 'user_data_dir')
-
+    finally:
+        remove(user_data_dir)

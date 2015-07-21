@@ -4,7 +4,7 @@
     "name": "${ CONFIG['name'] }",  
     "version": "${ CONFIG['version'] }",
     "description": "${ CONFIG['description'] }",
-    "icons": { "${ get_image_size(OUTPUT / 'icon.png') }": "icon.png" },
+    "icons": { "${ get_image_size('icon.png') }": "icon.png" },
 
     "permissions": [
         "storage",
@@ -14,7 +14,7 @@
     "background": {
         "persistent": false,
         "scripts": [
-          % for script in ['thirdparty/jquery.js'] + ['core.js'] + [s.relative_to(OUTPUT) for s in OUTPUT.glob('core/**/*.js')]:
+          % for script in ['thirdparty/jquery.js'] + ['core.js'] + glob('core/**/*.js'):
             "${ script }"${ '' if loop.last else ',' }
           % endfor
         ]

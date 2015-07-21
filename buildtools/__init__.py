@@ -6,22 +6,31 @@ __all__ = [
 
 from os import chdir
 from pathlib import Path
+from tempfile import mkdtemp
 import atexit
 
+from ._arg_parser import *
 from ._tools import *
-from ._locations import *
 from ._copy import *
 from ._remove import *
 from ._run import *
 from ._output import *
-    
+   
+args = arg_parser.parse_args()
+
 def finish():
-    output()
-    run()
+    run(args)
+    output(args)
 
 globals().update(tools)
 __all__.extend(tools.keys())
 
-cwd = Path.cwd()
-chdir(str(Path(__file__).parents[1]))
-atexit.register(lambda: chdir(str(cwd)))
+root = Path(__file__).parents[1]
+
+build_dir = mkdtemp(dir=str(root), prefix='.buildtmp-')
+atexit.register(lambda: remove(build_dir))
+
+copy(build_dir, root / 'source')
+
+chdir(build_dir)
+

@@ -3,7 +3,7 @@
 define([
     '/thirdparty/jquery.js',
     'hosts.js',
-  % for host in [s.relative_to(OUTPUT) for s in OUTPUT.glob('hosts/**/*.js')]:
+  % for host in glob('hosts/**/*.js'):
     '${ host }',
   % endfor
 ], function() {

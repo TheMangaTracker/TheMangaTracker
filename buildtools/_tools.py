@@ -4,8 +4,9 @@ __all__ = [
     'tools',
 ]
 
-from ._locations import *
-from ._config import *
+from pathlib import Path
+
+from ._glob import *
 from ._download import *
 from ._copy import *
 from ._render import *
@@ -15,9 +16,8 @@ from ._make_parents import *
 from ._remove import *
 
 tools = {
-    'SOURCE': SOURCE,
-    'OUTPUT': OUTPUT,
-    'CONFIG': CONFIG,
+    'Path': Path,
+    'glob': glob,
     'download': download,
     'copy': copy,
     'render': render,

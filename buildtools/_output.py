@@ -6,7 +6,6 @@ __all__ = [
 
 from pathlib import Path
 
-from ._locations import *
 from ._arg_parser import *
 from ._copy import *
 
@@ -16,8 +15,8 @@ arg_parser.add_arg(
     help='directory to place build output into'
 )
 
-def output():
-    args = arg_parser.parse_args()
+def output(args):
+    if args.output is None:
+        return
 
-    if args.output is not None:
-        copy(args.output, OUTPUT)
+    copy(args.output, '.')
