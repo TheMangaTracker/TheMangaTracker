@@ -2,7 +2,7 @@
 
 define([
     '/thirdparty/angular.js',
-    'hosts.search.js',
+    '/servers.js',
 ], function() {
 
     angular.module('page', [])
@@ -11,17 +11,17 @@ define([
 
         $scope.search = function() {
             $scope.urls = [];
-            var iterator = hosts.search({ name: $scope.name })
-            var loop = function(manga) {
-                if (manga === undefined) {
-                    return;    
-                }
-                $scope.$apply(function() {
-                    $scope.urls.push(manga.manga);    
-                });   
-                iterator(loop);
-            };  
-            iterator(loop);
+            var requestManga = servers.search({ name: $scope.name })
+            for (let i = 0; i < 200; ++i) {
+                requestManga(function(manga) {
+                    if (manga === undefined) {
+                        return;    
+                    }
+                    $scope.$apply(function() {
+                        $scope.urls[i] = manga;    
+                    });   
+                });
+            }
         };
     });
 

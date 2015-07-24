@@ -9,6 +9,8 @@ CONFIG = read_yaml('config.yaml')
 for file, url in read_yaml('thirdparty.yaml').items():
     download('thirdparty' / Path(file), url)
 
+render('servers.js', modules=glob('servers/*.js'))
+
 for template in glob('**/*.template'):
     render(template.parent / template.stem, template,
            CONFIG=CONFIG)

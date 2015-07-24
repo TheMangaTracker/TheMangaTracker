@@ -7,8 +7,8 @@
     <body>
         <input type="text" data-ng-model="name"></input>
         <button data-ng-click="search()">Search!</button>
-        <div data-ng-repeat="url in urls">
-            <a href="{{ url }}">{{ url }}</a>
+        <div data-ng-repeat="url in urls track by $index">
+            {{ $index }}: <a href="{{ url }}">{{ url }}</a>
         </div>
     </body>
 </html>
