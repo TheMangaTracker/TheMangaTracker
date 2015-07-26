@@ -2,39 +2,47 @@
 
 var servers;
 
-define([], function() {
-    let modules = [
-      % for module in modules:
-        '${ module }', 
-      % endfor
-    ];
-
-    servers = {
-        search(query) {
-            let states = [];
-
-            let i = 0;
-            return function(consume) {
-                let j = i++ % modules.length;
-           
-                if (typeof states[j] == 'function') {
-                    let request = states[j];
-                    request(consume);
-                } else if (states[j] === undefined) {
-                    let consumers = states[j] = [consume];
-                    require([modules[j]], function(server) {
-                        let request = states[j] = server.search(query);
-                        while (consumers.length > 0) {
-                            let consume = consumers.shift();
-                            request(consume);
-                        }
-                    });           
-                } else {
-                    let consumers = states[j];    
-                    consumers.push(consume);
+define([
+  % for module in modules:
+    '${ module }', 
+  % endfor
+    '/utility/AsyncBufferedIterator.js',
+], function() {
+    servers = (function(servers) {
+        return {
+            search(query) {
+                let iterators = [];
+                for (let server of servers) {
+                    let iterator = server.search(query);
+                    iterators.push(iterator);
                 }
-            };
-        },   
-    };
-});
 
+                return new AsyncBufferedIterator({
+                    whenNeedMore(provideMore, noMore) {
+                        let iterator = iterators.shift();
+                        iterators.push(iterator);
+                        iterator.requestNext({
+                            whenProvidedNext(item) {
+                                provideMore([item]);        
+                            },
+                            whenNoNext() {
+                                let index = iterators.indexOf(iterator);
+                                if (index != -1) {
+                                    iterators.splice(index, 1);    
+                                    if (iterators.length == 0) {
+                                        noMore();
+                                    }
+                                }
+                            },
+                        });
+                    },
+                    whenClosed() {
+                        for (let iterator of iterators) {
+                            iterator.close(); 
+                        }
+                    },
+                });
+            },   
+        };
+    })(new Set(Array.prototype.slice.call(arguments, 0, ${ len(modules) })));
+});

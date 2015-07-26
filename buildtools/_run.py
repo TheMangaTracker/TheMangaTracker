@@ -45,6 +45,7 @@ def run(args):
             '--user-data-dir=' + str(user_data_dir),
             '--no-first-run',
             '--load-extension=.',
+            '--start-maximized',
         ])
 
     finally:
