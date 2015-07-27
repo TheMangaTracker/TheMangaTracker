@@ -1,9 +1,9 @@
 'use strict';
 
 define([
+    '/servers/search.js',
     '/thirdparty/angular.js',
-    '/servers.js',
-], function() {
+], function(search) {
 
     angular.module('page', [])
     .controller('page', function($scope) {
@@ -15,7 +15,7 @@ define([
             if ($scope.searchIterator !== undefined) {
                 $scope.searchIterator.close();
             }
-            $scope.searchIterator = servers.search({ name: $scope.name });
+            $scope.searchIterator = search({ name: $scope.name });
             for (let i = 0; i < 250; ++i) {
                 $scope.searchIterator.requestNext({
                     whenProvidedNext(manga) {

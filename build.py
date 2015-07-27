@@ -9,14 +9,13 @@ CONFIG = read_yaml('config.yaml')
 for file, url in read_yaml('thirdparty.yaml').items():
     download('thirdparty' / Path(file), url)
 
-render('servers.js', modules=glob('servers/*.js'))
+servers = [s.name for s in glob('servers/*') if s.is_dir()]
+
+render('manifest.json', CONFIG=CONFIG, servers=servers)
+render('servers/search.js', CONFIG=CONFIG, servers=servers)
 render('search.html', CONFIG=CONFIG)
 
-for template in glob('**/*.template'):
-    render(template.parent / template.stem, template,
-           CONFIG=CONFIG)
-
-for file in glob('**/*.yaml') + glob('**/*.template'):
+for file in glob('**/*.yaml'):
     remove(file)
 
 finish()
