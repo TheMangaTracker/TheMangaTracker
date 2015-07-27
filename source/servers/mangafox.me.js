@@ -16,7 +16,7 @@ define([
             let interval = 5000;
             let nextTime = Date.now();
 
-            return function(query, provideManga) {
+            return function(query) {
                 query = (function(a) {
                     let b = {};
 
