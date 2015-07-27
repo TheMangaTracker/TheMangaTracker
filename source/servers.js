@@ -3,10 +3,10 @@
 var servers;
 
 define([
+    '/utility/AsyncBufferedIterator.js',
   % for module in modules:
     '${ module }', 
   % endfor
-    '/utility/AsyncBufferedIterator.js',
 ], function() {
     servers = (function(servers) {
         return {
@@ -44,5 +44,5 @@ define([
                 });
             },   
         };
-    })(new Set(Array.prototype.slice.call(arguments, 0, ${ len(modules) })));
+    })(new Set(Array.prototype.slice.call(arguments, -${ len(modules) })));
 });
