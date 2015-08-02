@@ -142,7 +142,7 @@ define([
         };
     })();
 
-    let makeChapterGetter = function(selectChapterLink) {
+    let makeChapterGetter = function(selectChapterAnchor) {
         return function(mangaUrl) {
             let abort = undefined;
             return new LazyAsync({
@@ -153,18 +153,18 @@ define([
 
                             let page = $(html, createEmptyDocument());
                             
-                            let chapterLinks = page.find('#chapters');
-                            if (chapterLinks.length == 0) {
+                            let chapterAnchors = page.find('#chapters');
+                            if (chapterAnchors.length == 0) {
                                 error('Page structure not recognized');
-                                finish();
                                 return;
                             }
 
-                            chapterLinks = chapterLinks.find('.chlist a.tips');
+                            chapterAnchors = chapterAnchors.find('.chlist a.tips');
 
-                            if (chapterLinks.length != 0) {
-                                let chapterLink = selectChapterLink(chapterLinks);
-                                let chapterUrl = chapterLink.attr('href');
+                            if (chapterAnchors.length != 0) {
+                                let chapterAnchor = selectChapterAnchor(chapterAnchors);
+                                let chapterUrl = chapterAnchor.attr('href');
+                                chapterUrl = chapterUrl.slice(0, chapterUrl.lastIndexOf('/'));  // remove page part 
                                 provide(chapterUrl);
                             } else {
                                 provide(undefined);    
@@ -191,12 +191,12 @@ define([
         };
     };
 
-    server.getFirstChapter = makeChapterGetter(function(chapterLinks) {
-        return chapterLinks.first();    
+    server.getFirstChapter = makeChapterGetter(function(chapterAnchors) {
+        return chapterAnchors.last();    
     });
         
-    server.getLastChapter = makeChapterGetter(function(chapterLinks) {
-        return chapterLinks.last();    
+    server.getLastChapter = makeChapterGetter(function(chapterAnchors) {
+        return chapterAnchors.first();    
     });
    
     return server;
