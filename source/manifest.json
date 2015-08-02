@@ -8,6 +8,7 @@
 
     "permissions": [
         "storage",
+
       % for server in servers:
         "*://*.${ server }/*"${ '' if loop.last else ',' }
       % endfor

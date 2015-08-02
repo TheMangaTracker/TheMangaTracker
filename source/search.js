@@ -1,9 +1,9 @@
 'use strict';
 
 define([
-    '/servers/search.js',
+    '/servers.js',
     '/thirdparty/angular.js',
-], function(search) {
+], function(servers) {
 
     angular.module('page', [])
     .controller('page', function($scope) {
@@ -13,18 +13,32 @@ define([
         $scope.search = function() {
             $scope.urls = [];
             if ($scope.searchIterator !== undefined) {
-                $scope.searchIterator.close();
+                $scope.searchIterator.discard();
             }
-            $scope.searchIterator = search({ name: $scope.name });
-            for (let i = 0; i < 250; ++i) {
-                $scope.searchIterator.requestNext({
-                    whenProvidedNext(manga) {
-                        $scope.$apply(function() {
-                            $scope.urls[i] = manga;    
-                        });   
-                    },
-                });
-            }
+            $scope.searchIterator = servers.search({ name: $scope.name });
+            let i = 0;
+            $scope.searchIterator.request({
+                whenProvided(manga) {
+                    manga.server.getLastChapter(manga.url).request({
+                        whenProvided(lastChapterUrl) {
+                            $scope.$apply(function() {
+                                $scope.urls.push(lastChapterUrl);  // TODO: discard these properly 
+                            });   
+                        },
+                        whenError(message) {
+                            console.log(manga.url + ' ' + message);  
+                        },
+                    });
+
+                    $scope.searchIterator.request(this);
+                },
+                whenFinished() {
+                    console.log('done.');      
+                },
+                whenError(message) {
+                    console.log('error: ' + message);    
+                }
+            });
         };
     });
 
