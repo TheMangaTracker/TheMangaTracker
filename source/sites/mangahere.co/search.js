@@ -10,26 +10,7 @@ import createEmptyDocument from '/utility/createEmptyDocument.js';
 export default function search(query) {
     return AsyncStream
     .count({ start: 1 })
-    .asyncMap((page, cbs) => {
-        let aborted = false;
-
-        let jqXHR = $.get('http://www.mangahere.co/search.php', $.extend({ page }, query))
-        .done((html, textStatus, jqXHR) => {
-            cbs.setAbort(null);
-            cbs.return(html);
-        })
-        .fail((jqXHR, textStatus, errorThrown) => {
-            cbs.setAbort(null);
-            if (!aborted) {
-                cbs.throw(new Error(textStatus + ' ' + errorThrown));
-            }
-        });
-
-        cbs.setAbort(() => {
-            aborted = true;
-            jqXHR.abort();  
-        });
-    })
+    .map(page => ({ url: 'http://www.mangahere.co/search.php', data: $.extend({ page }, query) })).ajax
     .map(html => $(html, createEmptyDocument()))
     .do(page => { if (page.find('.result_search').length == 0) { throw new Error('Page structure changed.'); } })
     .cutIf(page => page.find('.result_search .next-page').length == 0)  // nothing found

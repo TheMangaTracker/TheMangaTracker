@@ -115,6 +115,29 @@ export default class AsyncStream {
         });
     }
 
+    get ajax() {
+        return this.asyncMap((item, cbs) => {
+            let aborted = false;
+
+            let jqXHR = $.ajax(item)
+            .done((data, textStatus, jqXHR) => {
+                cbs.setAbort(null);
+                cbs.return(data);
+            })
+            .fail((jqXHR, textStatus, errorThrown) => {
+                cbs.setAbort(null);
+                if (!aborted) {
+                    cbs.throw(new Error(textStatus + ' ' + errorThrown));
+                }
+            });
+
+            cbs.setAbort(() => {
+                aborted = true;
+                jqXHR.abort();  
+            });
+        });    
+    }
+
     asyncCutIf(predicate) {
         return new AsyncStream(cbs => {
             this.request({
