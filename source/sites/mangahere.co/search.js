@@ -10,14 +10,37 @@ import createEmptyDocument from '/utility/createEmptyDocument.js';
 export default function search(query) {
     return AsyncStream
     .count({ start: 1 })
-    .map(page => ({ url: 'http://www.mangahere.co/search.php', data: $.extend({ page }, query) })).ajax
+    .ajax({
+        configure(page) {
+            return {
+                url: 'http://www.mangahere.co/search.php',
+                data: $.extend({ page }, query),
+            };
+        }    
+    })
     .map(html => $(html, createEmptyDocument()))
-    .do(page => { if (page.find('.result_search').length == 0) { throw new Error('Page structure changed.'); } })
+    .do(page => { if (page.find('.result_search').length == 0) { throw new Error('Search page structure changed.'); } })
     .cutIf(page => page.find('.result_search .next-page').length == 0)  // nothing found
     .cutNextIf(page => page.find('.result_search .next-page .next').length == 0)  // no next page
     .map(page => page.find('.result_search a.manga_info'))
-    .map(anchors => AsyncStream.from(anchors.toArray())).flatten
+    .map(anchors => AsyncStream.from(anchors.toArray()))
+    .flatten
     .map(anchor => anchor.href)
-    .map(url => ({ url }));
+    .ajax({})
+    .map(html => $(html, createEmptyDocument()))
+    .map(page => {
+        let titles = page
+        .find('label:contains(\'Alternative Name:\')')
+        .parent()
+        .contents()
+        .filter((no, element) => element.nodeType == 3)  // text nodes
+        .text()
+        .trim();
+        titles = (titles == 'None') ? [] : titles.split('; ');    
+        titles.unshift(page.find('h1.title').text().trim());
+
+        return { titles };
+    })
+    ;
 }
 

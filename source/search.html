@@ -7,8 +7,8 @@
     <body>
         <input type="text" data-ng-model="name"></input>
         <button data-ng-click="search()">Search!</button>
-        <div data-ng-repeat="manga in mangas track by manga.url">
-            {{ $index }}: <a href="{{ manga.url }}">{{ manga.url }}</a>
+        <div data-ng-repeat="manga in mangas track by $index">
+            {{ $index }}: {{ manga.titles.toString() }}
         </div>
     </body>
 </html>

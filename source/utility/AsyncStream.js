@@ -115,14 +115,70 @@ export default class AsyncStream {
         });
     }
 
-    get ajax() {
-        return this.asyncMap((item, cbs) => {
+    ajax(settings) {
+        settings = Object.create(settings);
+
+        if (settings.configure === undefined) {
+            settings.configure = (item) => {
+                return item;
+            };
+        }
+
+        if (settings.asyncConfigure === undefined) {
+            settings.asyncConfigure = (item, cbs) => {
+                let ajaxSettings;
+
+                try {
+                    ajaxSettings = settings.configure(item);
+                } catch (error) {
+                    cbs.throw(error);
+                    return;
+                }
+
+                cbs.return(ajaxSettings);
+            };
+        }
+
+        if (settings.integrate === undefined) {
+            settings.integrate = (item, data) => {
+                return data;
+            };
+        }
+
+        if (settings.asyncIntegrate === undefined) {
+            settings.asyncIntegrate = (item, data, cbs) => {
+                let result;
+
+                try {
+                    result = settings.integrate(item, data);
+                } catch (error) {
+                    cbs.throw(error);
+                    return;
+                }
+
+                cbs.return(result);
+            };
+        }
+
+        return this
+        .asyncMap((item, cbs) => {
+            settings.asyncConfigure(item, {
+                setAbort: cbs.setAbort,
+
+                return(ajaxSettings) {
+                    cbs.return([item, ajaxSettings]);    
+                },
+
+                throw: cbs.throw,
+            });    
+        })
+        .asyncMap(([item, ajaxSettings], cbs) => {
             let aborted = false;
 
-            let jqXHR = $.ajax(item)
+            let jqXHR = $.ajax(ajaxSettings)
             .done((data, textStatus, jqXHR) => {
                 cbs.setAbort(null);
-                cbs.return(data);
+                cbs.return([item, data]);
             })
             .fail((jqXHR, textStatus, errorThrown) => {
                 cbs.setAbort(null);
@@ -135,7 +191,10 @@ export default class AsyncStream {
                 aborted = true;
                 jqXHR.abort();  
             });
-        });    
+        })    
+        .asyncMap(([item, data], cbs) => {
+            settings.asyncIntegrate(item, data, cbs);    
+        });
     }
 
     asyncCutIf(predicate) {

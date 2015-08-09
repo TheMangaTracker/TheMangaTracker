@@ -42,7 +42,7 @@ angular.module('page', [])
             },
 
             throw(message) {
-                console.log('error: ' + message);    
+                console.error(message);    
             }
         };
 
