@@ -2,14 +2,14 @@
 
 import AsyncStream from '/utility/AsyncStream.js';
 
-% for i, server in enumerate(servers):
-import search${ str(i).zfill(len(str(len(servers)))) } from './${ server }/search.js';
+% for no, site in enumerate(sites):
+import search${ no } from './${ site }/search.js';
 % endfor
 
 export default function search(query) {
     return AsyncStream.of(
-        % for i in range(len(servers)):
-        search${ str(i).zfill(len(str(len(servers)))) + ('' if loop.last else ',') }
+        % for no in range(len(sites)):
+        search${ no }${ '' if loop.last else ',' }
         % endfor
     )
     .map(search => search(query))

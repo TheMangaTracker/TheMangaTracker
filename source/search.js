@@ -2,7 +2,7 @@
 
 import '/thirdparty/angular.js';
 
-import search from '/servers/search.js';
+import search from '/sites/search.js';
 
 angular.module('page', [])
 .controller('page', $scope => {
