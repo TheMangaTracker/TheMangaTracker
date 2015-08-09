@@ -2,13 +2,13 @@
 
 import '/thirdparty/jquery.js';
 
-import LazyAsyncStream from '/utility/LazyAsyncStream.js';
+import AsyncStream from '/utility/AsyncStream.js';
 import createEmptyDocument from '/utility/createEmptyDocument.js';
 
 //import Manga from './Manga.js';
 
 export default function search(query) {
-    return LazyAsyncStream
+    return AsyncStream
     .count({ start: 1 })
     .asyncMap((page, cbs) => {
         let aborted = false;
@@ -35,7 +35,7 @@ export default function search(query) {
     .cutIf(page => page.find('.result_search .next-page').length == 0)  // nothing found
     .cutNextIf(page => page.find('.result_search .next-page .next').length == 0)  // no next page
     .map(page => page.find('.result_search a.manga_info'))
-    .map(anchors => LazyAsyncStream.from(anchors.toArray())).flatten
+    .map(anchors => AsyncStream.from(anchors.toArray())).flatten
     .map(anchor => anchor.href)
     .map(url => ({ url }));
 }

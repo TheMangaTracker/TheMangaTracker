@@ -1,6 +1,6 @@
 'use strict';
 
-export default class LazyAsyncStream {
+export default class AsyncStream {
     constructor(request = cbs => { cbs.return(); }) {
         Object.defineProperties(this, {
             request: {
@@ -10,7 +10,7 @@ export default class LazyAsyncStream {
     }   
    
     static from(iterator) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             let value, done;
 
             try {
@@ -38,7 +38,7 @@ export default class LazyAsyncStream {
     }
 
     static count({ start = 0, stop = Number.MAX_SAFE_INTEGER, step = 1 }) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             if (start == stop) {
                 cbs.return();
                 return;
@@ -49,7 +49,7 @@ export default class LazyAsyncStream {
     }
 
     asyncMap(transform) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             this.request({
                 setAbort: cbs.setAbort,
 
@@ -116,7 +116,7 @@ export default class LazyAsyncStream {
     }
 
     asyncCutIf(predicate) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             this.request({
                 setAbort: cbs.setAbort,
 
@@ -163,7 +163,7 @@ export default class LazyAsyncStream {
     }
 
     asyncCutNextIf(predicate) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             this.request({
                 setAbort: cbs.setAbort,
 
@@ -178,7 +178,7 @@ export default class LazyAsyncStream {
 
                         return(result) {
                             if (result) {
-                                cbs.return(first, new LazyAsyncStream());
+                                cbs.return(first, new AsyncStream());
                                 return;
                             } 
 
@@ -210,7 +210,7 @@ export default class LazyAsyncStream {
     }
 
     chain(that) {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             this.request({
                 setAbort: cbs.setAbort,
 
@@ -229,7 +229,7 @@ export default class LazyAsyncStream {
     }
 
     get flatten() {
-        return new LazyAsyncStream(cbs => {
+        return new AsyncStream(cbs => {
             this.request({
                 setAbort: cbs.setAbort,
 
