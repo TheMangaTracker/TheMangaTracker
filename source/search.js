@@ -1,50 +1,63 @@
 'use strict';
 
-define([
-    '/servers.js',
-    '/thirdparty/angular.js',
-], function(servers) {
+import '/thirdparty/angular.js';
 
-    angular.module('page', [])
-    .controller('page', function($scope) {
-        $scope.title = 'Search';
-        
-        $scope.searchIterator = undefined;
-        $scope.search = function() {
-            $scope.urls = [];
-            if ($scope.searchIterator !== undefined) {
-                $scope.searchIterator.discard();
-            }
-            $scope.searchIterator = servers.search({ name: $scope.name });
-            let i = 0;
-            $scope.searchIterator.request({
-                whenProvided(manga) {
-                    manga.server.getLastChapter(manga.url).request({
-                        whenProvided(lastChapterUrl) {
-                            $scope.$apply(function() {
-                                $scope.urls.push(lastChapterUrl);  // TODO: discard these properly 
-                            });   
-                        },
-                        whenError(message) {
-                            console.log(manga.url + ' ' + message);  
-                        },
-                    });
+import search from '/servers/search.js';
 
-                    $scope.searchIterator.request(this);
-                },
-                whenFinished() {
+angular.module('page', [])
+.controller('page', $scope => {
+    $scope.title = 'Search';
+    
+    let abortPreviousSearch = () => {};
+
+    $scope.search = () => {
+        abortPreviousSearch();    
+
+        $scope.mangas = [];
+
+        let abort = null;
+
+        let i = 0;
+        let cbs = {
+            setAbort(newAbort) {
+                abort = newAbort;
+            },
+
+            return(manga, nextSearchStream) {
+                if (arguments.length == 0) {
                     console.log('done.');      
-                },
-                whenError(message) {
-                    console.log('error: ' + message);    
+                    return;
                 }
-            });
+
+                if (i++ > 500) {
+                    console.log('limit.');      
+                    return;
+                }
+
+                $scope.$apply(() => {
+                    $scope.mangas.push(manga); 
+                });  
+
+                nextSearchStream.request(cbs);
+            },
+
+            throw(message) {
+                console.log('error: ' + message);    
+            }
         };
-    });
 
-    angular.element(document).ready(function() {
-        angular.bootstrap(document, ['page']);    
-    });
+        search({ name: $scope.name }).request(cbs);
 
+        abortPreviousSearch = () => {
+            if (abort) {
+                abort();
+                abort = null;
+            }
+        };
+    };
+});
+
+angular.element(document).ready(() => {
+    angular.bootstrap(document, ['page']);    
 });
 

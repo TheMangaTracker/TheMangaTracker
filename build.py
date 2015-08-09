@@ -9,11 +9,14 @@ CONFIG = read_yaml('config.yaml')
 for file, url in read_yaml('thirdparty.yaml').items():
     download('thirdparty' / Path(file), url)
 
-servers = [s.stem for s in glob('servers/*.js')]
+servers = [s.name for s in glob('servers/*') if s.is_dir()]
 
 render('manifest.json', CONFIG=CONFIG, servers=servers)
-render('servers.js', CONFIG=CONFIG, servers=servers)
+render('servers/search.js', CONFIG=CONFIG, servers=servers)
 render('search.html', CONFIG=CONFIG)
+
+for file in ['search.js'] + glob('servers/**/*.js') + glob('utility/*.js'):
+    transpile(file);
 
 for file in glob('**/*.yaml'):
     remove(file)

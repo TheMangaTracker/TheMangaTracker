@@ -1,9 +1,6 @@
 'use strict';
 
-var createEmptyDocument;
+export default function createEmptyDocument() {
+    return new DOMParser().parseFromString('<!DOCTYPE html><html></html>', 'text/html');
+}
 
-define([], function() {
-    createEmptyDocument = function() {
-        return new DOMParser().parseFromString('<!DOCTYPE html><html></html>', 'text/html');
-    };
-});
