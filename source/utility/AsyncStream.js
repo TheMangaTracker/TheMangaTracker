@@ -1,10 +1,131 @@
 'use strict';
 
+function asynchronize(callback) {
+    return function(cbs, ...args) {
+        let result;
+
+        try {
+            result = callback(...args);    
+        } catch (error) {
+            cbs.throw(error);
+            return;
+        }
+
+        cbs.return(result);
+    };    
+}
+
+let defaultCallbacks = {
+    refine(callbacks) {
+        let refined = Object.create(this);
+        
+        if (callbacks.hasOwnProperty('setAbort')) {
+            refined.setAbort = callbacks.setAbort;    
+        }
+
+        if (callbacks.hasOwnProperty('break')) {
+            refined.break = callbacks.break;    
+        }
+
+        if (callbacks.hasOwnProperty('return') || callbacks.hasOwnProperty('continue')) {
+            let returnCallback = callbacks.return || this.return;
+            let continueCallback = callbacks.continue || this.continue;
+
+            let returnedFirst = true;
+            let returnSecond = null;
+
+            refined.return = first => {
+                returnCallback(first);
+                if (returnSecond !== null) {
+                    returnSecond();
+                } else {
+                    returnedFirst = true;
+                }
+            }
+
+            refined.continue = rest => {
+                continueCallback(new AsyncStream(ctx => {
+                    rest.request(ctx.refine({
+                        return(second) {
+                            if (returnedFirst) {
+                                ctx.return(second);    
+                            } else {
+                                returnSecond = () => {
+                                    ctx.return(second);    
+                                };    
+                            } 
+                        },    
+                    }));    
+                }));     
+            }
+        }
+
+        if (callbacks.hasOwnProperty('throw')) {
+            refined.throw = callbacks.throw;
+        }
+
+        return refined;
+    },
+
+    get singularize() {
+        let singularized = Object.create(this);
+
+        singularized.refine = function(callbacks) {
+            let refined = Object.create(this); 
+
+            if (callbacks.hasOwnProperty('setAbort')) {
+                refined.setAbort = callbacks.setAbort;    
+            }
+
+            if (callbacks.hasOwnProperty('return')) {
+                refined.return = callbacks.return;    
+            }
+
+            if (callbacks.hasOwnProperty('throw')) {
+                refined.throw = callbacks.throw;    
+            }
+
+            return refined;
+        };
+
+        Object.defineProperties(singularized, {
+            singularize: {
+                get() {
+                    return this;
+                },    
+            },    
+        });
+
+        singularized.break = undefined;
+        singularized.continue = undefined;
+
+        return singularized;
+    },
+
+    setAbort(abort) {},
+
+    break() {},
+
+    return(first) {},
+
+    continue(rest) {},
+
+    throw(error) {
+        console.error(error);    
+    },
+};
+
 export default class AsyncStream {
-    constructor(request = cbs => { cbs.return(); }) {
+    constructor(request = cbs => { cbs.break(); }) {
         Object.defineProperties(this, {
             request: {
-                value: request,    
+                value(cbs) {
+                    if (!defaultCallbacks.isPrototypeOf(cbs)) {
+                        cbs = defaultCallbacks.refine(cbs);
+                    }
+
+                    request(cbs);
+                },    
             },    
         });
     }   
@@ -25,94 +146,90 @@ export default class AsyncStream {
             }
 
             if (done) {
-                cbs.return();
+                cbs.break();
                 return;
             }
 
-            cbs.return(value, this.from(iterator));    
+            cbs.continue(AsyncStream.from(iterator));
+            cbs.return(value);    
         });    
     }
 
     static of(...values) {
-        return this.from(values);    
+        return AsyncStream.from(values);    
     }
 
-    static count({ start = 0, stop = Number.MAX_SAFE_INTEGER, step = 1 }) {
+    static count({ start = 0, step = 1, stop = Number.MAX_SAFE_INTEGER }) {
         return new AsyncStream(cbs => {
             if (start == stop) {
-                cbs.return();
+                cbs.break();
                 return;
             }
 
-            cbs.return(start, this.count({ start: start + step, stop, step }));
+            cbs.continue(AsyncStream.count({ start: start + step, stop, step }));
+            cbs.return(start);
         });    
     }
 
     asyncMap(transform) {
         return new AsyncStream(cbs => {
-            this.request({
-                setAbort: cbs.setAbort,
-
-                return(first, rest) {
-                    if (arguments.length == 0) {
-                        cbs.return(); 
-                        return;
-                    }
-
-                    transform(first, {
-                        setAbort: cbs.setAbort,
-
-                        return(first) {
-                            cbs.return(first, rest.asyncMap(transform));
-                        },
-
-                        throw: cbs.throw,    
-                    });
+            this.request(cbs.refine({
+                return(first) {
+                    transform(cbs.singularize, first);
                 },
 
-                throw: cbs.throw,
-            });    
+                continue(rest) {
+                    cbs.continue(rest.asyncMap(transform));
+                },
+            }));    
         });
     }
 
     map(transform) {
-        return this.asyncMap((item, cbs) => {
-            try {
-                item = transform(item);
-            } catch (error) {
-                cbs.throw(error);
-                return;
-            }
-
-            cbs.return(item);
-        });    
+        return this.asyncMap(asynchronize(transform));    
     }
     
-    asyncDo(action) {
-        return this.asyncMap((item, cbs) => {
-            action(item, {
-                setAbort: cbs.setAbort,
+    asyncFold(initial, combine) {
+        let rest;
 
-                return() {
-                    cbs.return(item);
+        return new AsyncStream(cbs => {
+            this.request(cbs.refine({
+                break() {
+                    cbs.continue(new AsyncStream());
+                    cbs.return(initial);
                 },
 
-                throw: cbs.throw,
-            });   
+                return(first) {
+                    combine(cbs.singularize.refine({
+                        return(result) {
+                            rest.asyncFold(result, combine).request(cbs);
+                        }, 
+                    }), initial, first);
+                },
+
+                continue(_rest) {
+                    rest = _rest;
+                },
+            }));    
+        });
+    }
+    
+    fold(initial, combine) {
+        return this.asyncFold(initial, asynchronize(combine));    
+    }
+
+    asyncDo(action) {
+        return this.asyncMap((cbs, item) => {
+            action(cbs.refine({
+                return(undefined) {
+                    cbs.return(item);
+                },
+            }), item);   
         });
     }
 
     do(action) {
-        return this.asyncDo((item, cbs) => {
-            try {
-                action(item);      
-            } catch (error) {
-                cbs.throw(error);
-                return;
-            }
-
-            cbs.return();
-        });
+        return this.asyncDo(asynchronize(action));
     }
 
     ajax(settings) {
@@ -125,18 +242,7 @@ export default class AsyncStream {
         }
 
         if (settings.asyncConfigure === undefined) {
-            settings.asyncConfigure = (item, cbs) => {
-                let ajaxSettings;
-
-                try {
-                    ajaxSettings = settings.configure(item);
-                } catch (error) {
-                    cbs.throw(error);
-                    return;
-                }
-
-                cbs.return(ajaxSettings);
-            };
+            settings.asyncConfigure = asynchronize(settings.configure);
         }
 
         if (settings.integrate === undefined) {
@@ -146,33 +252,18 @@ export default class AsyncStream {
         }
 
         if (settings.asyncIntegrate === undefined) {
-            settings.asyncIntegrate = (item, data, cbs) => {
-                let result;
-
-                try {
-                    result = settings.integrate(item, data);
-                } catch (error) {
-                    cbs.throw(error);
-                    return;
-                }
-
-                cbs.return(result);
-            };
+            settings.asyncIntegrate = asynchronize(settings.integrate);
         }
 
         return this
-        .asyncMap((item, cbs) => {
-            settings.asyncConfigure(item, {
-                setAbort: cbs.setAbort,
-
+        .asyncMap((cbs, item) => {
+            settings.asyncConfigure(cbs.refine({
                 return(ajaxSettings) {
                     cbs.return([item, ajaxSettings]);    
                 },
-
-                throw: cbs.throw,
-            });    
+            }), item);    
         })
-        .asyncMap(([item, ajaxSettings], cbs) => {
+        .asyncMap((cbs, [item, ajaxSettings]) => {
             let aborted = false;
 
             let jqXHR = $.ajax(ajaxSettings)
@@ -183,7 +274,7 @@ export default class AsyncStream {
             .fail((jqXHR, textStatus, errorThrown) => {
                 cbs.setAbort(null);
                 if (!aborted) {
-                    cbs.throw(new Error(textStatus + ' ' + errorThrown));
+                    cbs.throw(errorThrown);
                 }
             });
 
@@ -192,140 +283,98 @@ export default class AsyncStream {
                 jqXHR.abort();  
             });
         })    
-        .asyncMap(([item, data], cbs) => {
-            settings.asyncIntegrate(item, data, cbs);    
+        .asyncMap((cbs, [item, data]) => {
+            settings.asyncIntegrate(cbs, item, data);    
         });
     }
 
-    asyncCutIf(predicate) {
+    asyncBreakIf(predicate) {
         return new AsyncStream(cbs => {
-            this.request({
-                setAbort: cbs.setAbort,
+            let rest;
 
-                return(first, rest) {
-                    if (arguments.length == 0) {
-                        cbs.return();
-                        return;
-                    } 
-
-                    predicate(first, {
-                        setAbort: cbs.setAbort,
-
-                        return(result) {
-                            if (result) {
-                                cbs.return();
+            this.request(cbs.refine({
+                return(first) {
+                    predicate(cbs.singularize.refine({
+                        return(shouldBreak) {
+                            if (shouldBreak) {
+                                cbs.break();
                                 return;
-                            } 
+                            }
 
-                            cbs.return(first, rest.asyncCutIf(predicate));
+                            cbs.continue(rest.asyncBreakIf(predicate));
+                            cbs.return(first);
                         }, 
-                    
-                        throw: cbs.throw,
-                    });
+                    }), first);
                 },
 
-                throw: cbs.throw,
-            });    
+                continue(_rest) {
+                    rest = _rest;
+                },
+            }));    
         });
     }
 
-    cutIf(predicate) {
-        return this.asyncCutIf((item, cbs) => {
-            let result;
-
-            try {
-                result = predicate(item);    
-            } catch (error) {
-                cbs.throw(error);
-                return;
-            }
-
-            cbs.return(result);
-        });
+    breakIf(predicate) {
+        return this.asyncBreakIf(asynchronize(predicate));
     }
 
-    asyncCutNextIf(predicate) {
+    asyncBreakNextIf(predicate) {
         return new AsyncStream(cbs => {
-            this.request({
-                setAbort: cbs.setAbort,
+            let rest;
 
-                return(first, rest) {
-                    if (arguments.length == 0) {
-                        cbs.return();
-                        return;
-                    } 
+            this.request(cbs.refine({
+                return(first) {
+                    predicate(cbs.singularize.refine({
+                        return(shouldBreak) {
+                            if (shouldBreak) {
+                                cbs.continue(new AsyncStream());
+                            } else {
+                                cbs.continue(rest.asyncBreakNextIf(predicate));
+                            }
 
-                    predicate(first, {
-                        setAbort: cbs.setAbort,
-
-                        return(result) {
-                            if (result) {
-                                cbs.return(first, new AsyncStream());
-                                return;
-                            } 
-
-                            cbs.return(first, rest.asyncCutNextIf(predicate));
+                            cbs.return(first);
                         }, 
-                    
-                        throw: cbs.throw,
-                    });
+                    }), first);
                 },
 
-                throw: cbs.throw,
-            });    
+                continue(_rest) {
+                    rest = _rest;
+                },
+            }));    
         });
     }
 
-    cutNextIf(predicate) {
-        return this.asyncCutNextIf((item, cbs) => {
-            let result;
-
-            try {
-                result = predicate(item);    
-            } catch (error) {
-                cbs.throw(error);
-                return;
-            }
-
-            cbs.return(result);
-        });
+    breakNextIf(predicate) {
+        return this.asyncBreakNextIf(asynchronize(predicate));
     }
 
     chain(that) {
         return new AsyncStream(cbs => {
-            this.request({
-                setAbort: cbs.setAbort,
-
-                return(first, rest) {
-                    if (arguments.length == 0) {
-                        that.request(cbs);    
-                        return;
-                    } 
-
-                    cbs.return(first, rest.chain(that));
+            this.request(cbs.refine({
+                break() {
+                    that.request(cbs);  
                 },
 
-                throw: cbs.throw,
-            });    
+                continue(rest) {
+                    cbs.continue(rest.chain(that));
+                },
+            }));    
         });
     }
 
     get flatten() {
+        let rest;
+
         return new AsyncStream(cbs => {
-            this.request({
-                setAbort: cbs.setAbort,
-
-                return(first, rest) {
-                    if (arguments.length == 0) {
-                        cbs.return(); 
-                        return;
-                    }
-
+            this.request(cbs.refine({
+                return(first) {
                     first.chain(rest.flatten).request(cbs);
                 },
 
-                throw: cbs.throw,
-            });    
+                continue(_rest) {
+                    rest = _rest;
+                },
+            }));    
         });
     }
 }

@@ -20,8 +20,8 @@ export default function search(query) {
     })
     .map(html => $(html, createEmptyDocument()))
     .do(page => { if (page.find('.result_search').length == 0) { throw new Error('Search page structure changed.'); } })
-    .cutIf(page => page.find('.result_search .next-page').length == 0)  // nothing found
-    .cutNextIf(page => page.find('.result_search .next-page .next').length == 0)  // no next page
+    .breakIf(page => page.find('.result_search .next-page').length == 0)  // nothing found
+    .breakNextIf(page => page.find('.result_search .next-page .next').length == 0)  // no next page
     .map(page => page.find('.result_search a.manga_info'))
     .map(anchors => AsyncStream.from(anchors.toArray()))
     .flatten

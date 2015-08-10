@@ -2,6 +2,8 @@
 
 import '/thirdparty/angular.js';
 
+import asyncCall from '/utility/asyncCall.js';
+
 import search from '/sites/search.js';
 
 angular.module('page', [])
@@ -15,35 +17,33 @@ angular.module('page', [])
 
         $scope.mangas = [];
 
-        let abort = null;
+        let abort;
 
         let i = 0;
         let cbs = {
-            setAbort(newAbort) {
-                abort = newAbort;
+            setAbort(_abort) {
+                abort = _abort;    
             },
-
-            return(manga, nextSearchStream) {
-                if (arguments.length == 0) {
-                    console.log('done.');      
-                    return;
-                }
-
-                if (i++ > 500) {
-                    console.log('limit.');      
-                    return;
-                }
-
+            
+            return(manga) {
                 $scope.$apply(() => {
-                    $scope.mangas.push(manga); 
-                });  
-
-                nextSearchStream.request(cbs);
+                    $scope.mangas.push(manga);    
+                });
             },
 
-            throw(message) {
-                console.error(message);    
-            }
+            continue(rest) {
+                if (i++ > 500) {
+                    return;    
+                }
+
+                asyncCall(() => {
+                    rest.request(cbs);    
+                });
+            },
+
+            throw(error) {
+                console.error(error);    
+            },
         };
 
         search({ name: $scope.name }).request(cbs);
