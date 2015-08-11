@@ -9,7 +9,7 @@ import createEmptyDocument from '/utility/createEmptyDocument.js';
 
 export default function search(query) {
     return AsyncStream
-    .count({ start: 1 })
+    .count({ from: 1 })
     .ajax({
         configure(page) {
             return {

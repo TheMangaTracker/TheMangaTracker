@@ -1,137 +1,66 @@
 'use strict';
 
-function asynchronize(callback) {
-    return function(cbs, ...args) {
-        let result;
+function provideDefaults(callbacks) {
+    let newCallbacks = Object.create(callbacks);
+
+    newCallbacks.addAbort = callbacks.addAbort || (abort => {});
+    newCallbacks.deleteAbort = callbacks.deleteAbort || (abort => {});
+    newCallbacks.break = callbacks.break || (() => {});
+    newCallbacks.yield = callbacks.yield || (value => {});
+    newCallbacks.throw = callbacks.throw || (error => {
+        console.error(error);    
+    });
+
+    return newCallbacks;
+}
+
+function refine(callbacks, newCallbacks) {
+    let refinedCallbacks = Object.create(callbacks);
+
+    for (let field of Object.keys(newCallbacks)) {
+        refinedCallbacks[field] = newCallbacks[field];    
+    }
+
+    return refinedCallbacks;
+}
+
+function singularize(callbacks) {
+    return {
+        addAbort: callbacks.addAbort.bind(callbacks),
+        deleteAbort: callbacks.deleteAbort.bind(callbacks),
+        return: callbacks.yield.bind(callbacks),
+        throw: callbacks.throw.bind(callbacks),
+    };
+}
+
+function asynchronize(transform) {
+    return function(callbacks, ...args) {
+        let res;
 
         try {
-            result = callback(...args);    
+            res = transform(...args);
         } catch (error) {
-            cbs.throw(error);
+            callbacks.throw(error);
             return;
         }
 
-        cbs.return(result);
+        callbacks.return(res);
     };    
 }
-
-let defaultCallbacks = {
-    refine(callbacks) {
-        let refined = Object.create(this);
-        
-        if (callbacks.hasOwnProperty('setAbort')) {
-            refined.setAbort = callbacks.setAbort;    
-        }
-
-        if (callbacks.hasOwnProperty('break')) {
-            refined.break = callbacks.break;    
-        }
-
-        if (callbacks.hasOwnProperty('return') || callbacks.hasOwnProperty('continue')) {
-            let returnCallback = callbacks.return || this.return;
-            let continueCallback = callbacks.continue || this.continue;
-
-            let returnedFirst = true;
-            let returnSecond = null;
-
-            refined.return = first => {
-                returnCallback(first);
-                if (returnSecond !== null) {
-                    returnSecond();
-                } else {
-                    returnedFirst = true;
-                }
-            }
-
-            refined.continue = rest => {
-                continueCallback(new AsyncStream(ctx => {
-                    rest.request(ctx.refine({
-                        return(second) {
-                            if (returnedFirst) {
-                                ctx.return(second);    
-                            } else {
-                                returnSecond = () => {
-                                    ctx.return(second);    
-                                };    
-                            } 
-                        },    
-                    }));    
-                }));     
-            }
-        }
-
-        if (callbacks.hasOwnProperty('throw')) {
-            refined.throw = callbacks.throw;
-        }
-
-        return refined;
-    },
-
-    get singularize() {
-        let singularized = Object.create(this);
-
-        singularized.refine = function(callbacks) {
-            let refined = Object.create(this); 
-
-            if (callbacks.hasOwnProperty('setAbort')) {
-                refined.setAbort = callbacks.setAbort;    
-            }
-
-            if (callbacks.hasOwnProperty('return')) {
-                refined.return = callbacks.return;    
-            }
-
-            if (callbacks.hasOwnProperty('throw')) {
-                refined.throw = callbacks.throw;    
-            }
-
-            return refined;
-        };
-
-        Object.defineProperties(singularized, {
-            singularize: {
-                get() {
-                    return this;
-                },    
-            },    
-        });
-
-        singularized.break = undefined;
-        singularized.continue = undefined;
-
-        return singularized;
-    },
-
-    setAbort(abort) {},
-
-    break() {},
-
-    return(first) {},
-
-    continue(rest) {},
-
-    throw(error) {
-        console.error(error);    
-    },
-};
 
 export default class AsyncStream {
     constructor(request = cbs => { cbs.break(); }) {
         Object.defineProperties(this, {
             request: {
-                value(cbs) {
-                    if (!defaultCallbacks.isPrototypeOf(cbs)) {
-                        cbs = defaultCallbacks.refine(cbs);
-                    }
-
-                    request(cbs);
+                value(callbacks) {
+                    request(provideDefaults(callbacks));
                 },    
             },    
         });
     }   
    
     static from(iterator) {
-        return new AsyncStream(cbs => {
+        return new AsyncStream(callbacks => {
             let value, done;
 
             try {
@@ -141,17 +70,17 @@ export default class AsyncStream {
 
                 ({ value, done } = iterator.next());
             } catch (error) {
-                cbs.throw(error);
+                callbacks.throw(error);
                 return;
             }
 
             if (done) {
-                cbs.break();
+                callbacks.break();
                 return;
             }
 
-            cbs.continue(AsyncStream.from(iterator));
-            cbs.return(value);    
+            callbacks.continue(AsyncStream.from(iterator));
+            callbacks.yield(value);    
         });    
     }
 
@@ -159,27 +88,26 @@ export default class AsyncStream {
         return AsyncStream.from(values);    
     }
 
-    static count({ start = 0, step = 1, stop = Number.MAX_SAFE_INTEGER }) {
-        return new AsyncStream(cbs => {
-            if (start == stop) {
-                cbs.break();
-                return;
+    static count({ from = 0, to = Number.MAX_SAFE_INTEGER, by = 1 }) {
+        return new AsyncStream(callbacks => {
+            if (by > 0 && from >= to || by < 0 && from <= to) {
+                callbacks.break();
+            } else {
+                callbacks.continue(AsyncStream.count({ from: from + by, to, by }));
+                callbacks.yield(from);
             }
-
-            cbs.continue(AsyncStream.count({ start: start + step, stop, step }));
-            cbs.return(start);
         });    
     }
 
     asyncMap(transform) {
-        return new AsyncStream(cbs => {
-            this.request(cbs.refine({
-                return(first) {
-                    transform(cbs.singularize, first);
+        return new AsyncStream(callbacks => {
+            this.request(refine(callbacks, {
+                yield(first) {
+                    transform(singularize(callbacks), first);
                 },
 
                 continue(rest) {
-                    cbs.continue(rest.asyncMap(transform));
+                    callbacks.continue(rest.asyncMap(transform));
                 },
             }));    
         });
@@ -192,17 +120,17 @@ export default class AsyncStream {
     asyncFold(initial, combine) {
         let rest;
 
-        return new AsyncStream(cbs => {
-            this.request(cbs.refine({
+        return new AsyncStream(callbacks => {
+            this.request(callbacks.refine({
                 break() {
-                    cbs.continue(new AsyncStream());
-                    cbs.return(initial);
+                    callbacks.continue(new AsyncStream());
+                    callbacks.yield(initial);
                 },
 
-                return(first) {
-                    combine(cbs.singularize.refine({
+                yield(first) {
+                    combine(refine(singularize(callbacks), {
                         return(result) {
-                            rest.asyncFold(result, combine).request(cbs);
+                            rest.asyncFold(result, combine).request(callbacks);
                         }, 
                     }), initial, first);
                 },
@@ -219,10 +147,10 @@ export default class AsyncStream {
     }
 
     asyncDo(action) {
-        return this.asyncMap((cbs, item) => {
-            action(cbs.refine({
-                return(undefined) {
-                    cbs.return(item);
+        return this.asyncMap((callbacks, item) => {
+            action(refine(callbacks, {
+                return() {
+                    callbacks.return(item);
                 },
             }), item);   
         });
@@ -256,53 +184,54 @@ export default class AsyncStream {
         }
 
         return this
-        .asyncMap((cbs, item) => {
-            settings.asyncConfigure(cbs.refine({
+        .asyncMap((callbacks, item) => {
+            settings.asyncConfigure(refine(callbacks, {
                 return(ajaxSettings) {
-                    cbs.return([item, ajaxSettings]);    
+                    callbacks.return([item, ajaxSettings]);    
                 },
             }), item);    
         })
-        .asyncMap((cbs, [item, ajaxSettings]) => {
+        .asyncMap((callbacks, [item, ajaxSettings]) => {
             let aborted = false;
+            let abort = () => {
+                aborted = true;
+                jqXHR.abort();  
+            };
 
             let jqXHR = $.ajax(ajaxSettings)
+            .always(() => {
+                callbacks.deleteAbort(abort);
+            })
             .done((data, textStatus, jqXHR) => {
-                cbs.setAbort(null);
-                cbs.return([item, data]);
+                callbacks.return([item, data]);
             })
             .fail((jqXHR, textStatus, errorThrown) => {
-                cbs.setAbort(null);
                 if (!aborted) {
-                    cbs.throw(errorThrown);
+                    callbacks.throw(errorThrown);
                 }
             });
 
-            cbs.setAbort(() => {
-                aborted = true;
-                jqXHR.abort();  
-            });
+            callbacks.addAbort(abort);
         })    
-        .asyncMap((cbs, [item, data]) => {
-            settings.asyncIntegrate(cbs, item, data);    
+        .asyncMap((callbacks, [item, data]) => {
+            settings.asyncIntegrate(callbacks, item, data);    
         });
     }
 
     asyncBreakIf(predicate) {
-        return new AsyncStream(cbs => {
+        return new AsyncStream(callbacks => {
             let rest;
 
-            this.request(cbs.refine({
-                return(first) {
-                    predicate(cbs.singularize.refine({
+            this.request(refine(callbacks, {
+                yield(first) {
+                    predicate(refine(singularize(callbacks), {
                         return(shouldBreak) {
                             if (shouldBreak) {
-                                cbs.break();
-                                return;
+                                callbacks.break();
+                            } else {
+                                callbacks.continue(rest.asyncBreakIf(predicate));
+                                callbacks.yield(first);
                             }
-
-                            cbs.continue(rest.asyncBreakIf(predicate));
-                            cbs.return(first);
                         }, 
                     }), first);
                 },
@@ -319,20 +248,20 @@ export default class AsyncStream {
     }
 
     asyncBreakNextIf(predicate) {
-        return new AsyncStream(cbs => {
+        return new AsyncStream(callbacks => {
             let rest;
 
-            this.request(cbs.refine({
-                return(first) {
-                    predicate(cbs.singularize.refine({
+            this.request(refine(callbacks, {
+                yield(first) {
+                    predicate(refine(singularize(callbacks), {
                         return(shouldBreak) {
                             if (shouldBreak) {
-                                cbs.continue(new AsyncStream());
+                                callbacks.continue(new AsyncStream());
                             } else {
-                                cbs.continue(rest.asyncBreakNextIf(predicate));
+                                callbacks.continue(rest.asyncBreakNextIf(predicate));
                             }
 
-                            cbs.return(first);
+                            callbacks.yield(first);
                         }, 
                     }), first);
                 },
@@ -349,14 +278,14 @@ export default class AsyncStream {
     }
 
     chain(that) {
-        return new AsyncStream(cbs => {
-            this.request(cbs.refine({
+        return new AsyncStream(callbacks => {
+            this.request(refine(callbacks, {
                 break() {
-                    that.request(cbs);  
+                    that.request(callbacks);  
                 },
 
                 continue(rest) {
-                    cbs.continue(rest.chain(that));
+                    callbacks.continue(rest.chain(that));
                 },
             }));    
         });
@@ -365,10 +294,10 @@ export default class AsyncStream {
     get flatten() {
         let rest;
 
-        return new AsyncStream(cbs => {
-            this.request(cbs.refine({
-                return(first) {
-                    first.chain(rest.flatten).request(cbs);
+        return new AsyncStream(callbacks => {
+            this.request(refine(callbacks, {
+                yield(first) {
+                    first.chain(rest.flatten).request(callbacks);
                 },
 
                 continue(_rest) {

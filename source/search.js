@@ -2,56 +2,53 @@
 
 import '/thirdparty/angular.js';
 
-import asyncCall from '/utility/asyncCall.js';
-
 import search from '/sites/search.js';
 
 angular.module('page', [])
 .controller('page', $scope => {
     $scope.title = 'Search';
     
-    let abortPreviousSearch = () => {};
-
+    let abortSearch = null;
     $scope.search = () => {
-        abortPreviousSearch();    
+        if (abortSearch !== null) {
+            abortSearch();    
+            abortSearch = null;
+            return;
+        }
 
         $scope.mangas = [];
 
-        let abort;
+        let aborts = new Set();
 
-        let i = 0;
-        let cbs = {
-            setAbort(_abort) {
-                abort = _abort;    
+        let callbacks = {
+            addAbort(abort) {
+                aborts.add(abort); 
             },
-            
-            return(manga) {
+
+            deleteAbort(abort) {
+                aborts.delete(abort); 
+            },
+
+            break() {
+                abortSearch = null;    
+            },
+
+            yield(manga) {
                 $scope.$apply(() => {
                     $scope.mangas.push(manga);    
                 });
             },
 
-            continue(rest) {
-                if (i++ > 500) {
-                    return;    
-                }
-
-                asyncCall(() => {
-                    rest.request(cbs);    
-                });
+            continue(mangas) {
+                mangas.request(callbacks);     
             },
+        };    
 
-            throw(error) {
-                console.error(error);    
-            },
-        };
+        search({ name: $scope.name }).request(callbacks);
 
-        search({ name: $scope.name }).request(cbs);
-
-        abortPreviousSearch = () => {
-            if (abort) {
+        abortSearch = () => {
+            for (let abort of aborts) {
                 abort();
-                abort = null;
             }
         };
     };
