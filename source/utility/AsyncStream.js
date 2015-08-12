@@ -1,21 +1,46 @@
 'use strict';
 
 function ensureDefaults(callbacks) {
-    if (callbacks.addAbort && callbacks.deleteAbort && callbacks.break && callbacks.yield && callbacks.throw) {
+    let isFull = callbacks.addAbort
+              && callbacks.deleteAbort
+              && callbacks.break
+              && callbacks.yield
+              && callbacks.continue
+              && callbacks.throw;
+
+    if (isFull) {
         return callbacks;
     }
 
-    let newCallbacks = Object.create(callbacks);
+    callbacks = Object.create(callbacks);
 
-    newCallbacks.addAbort = callbacks.addAbort || (abort => {});
-    newCallbacks.deleteAbort = callbacks.deleteAbort || (abort => {});
-    newCallbacks.break = callbacks.break || (() => {});
-    newCallbacks.yield = callbacks.yield || (value => {});
-    newCallbacks.throw = callbacks.throw || (error => {
-        console.error(error);    
-    });
+    if (!callbacks.addAbort) {
+        callbacks.addAbort = abort => {};
+    }
 
-    return newCallbacks;
+    if (!callbacks.deleteAbort) {
+        callbacks.deleteAbort = abort => {};
+    }
+
+    if (!callbacks.break) {
+        callbacks.break = () => {};
+    }
+
+    if (!callbacks.yield) {
+        callbacks.yield = first => {};
+    }
+    
+    if (!callbacks.continue) {
+        callbacks.continue = rest => {};
+    }
+    
+    if (!callbacks.throw) {
+        callbacks.throw = error => {
+            contole.log(error);    
+        };
+    }
+
+    return callbacks;
 }
 
 function refine(callbacks, newCallbacks) {
@@ -167,23 +192,23 @@ export default class AsyncStream {
     ajax(settings) {
         settings = Object.create(settings);
 
-        if (settings.configure === undefined) {
+        if (!settings.configure) {
             settings.configure = (item) => {
                 return item;
             };
         }
 
-        if (settings.asyncConfigure === undefined) {
+        if (!settings.asyncConfigure) {
             settings.asyncConfigure = asynchronize(settings.configure);
         }
 
-        if (settings.integrate === undefined) {
+        if (!settings.integrate) {
             settings.integrate = (item, data) => {
                 return data;
             };
         }
 
-        if (settings.asyncIntegrate === undefined) {
+        if (!settings.asyncIntegrate) {
             settings.asyncIntegrate = asynchronize(settings.integrate);
         }
 
