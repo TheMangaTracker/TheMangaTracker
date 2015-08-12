@@ -413,5 +413,9 @@ export default class AsyncStream {
             }));    
         });
     }
+
+    enumerate({ from = 0 }) {
+        return AsyncStream.count({ from }).zip(this);     
+    }
 }
 
