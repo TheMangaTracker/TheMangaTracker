@@ -36,7 +36,7 @@ function ensureDefaults(callbacks) {
     
     if (!callbacks.throw) {
         callbacks.throw = error => {
-            console.log(error);    
+            console.error(error);    
         };
     }
 
