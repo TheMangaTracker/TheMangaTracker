@@ -1,6 +1,10 @@
 'use strict';
 
-function provideDefaults(callbacks) {
+function ensureDefaults(callbacks) {
+    if (callbacks.addAbort && callbacks.deleteAbort && callbacks.break && callbacks.yield && callbacks.throw) {
+        return callbacks;
+    }
+
     let newCallbacks = Object.create(callbacks);
 
     newCallbacks.addAbort = callbacks.addAbort || (abort => {});
@@ -53,7 +57,7 @@ export default class AsyncStream {
         Object.defineProperties(this, {
             request: {
                 value(callbacks) {
-                    request(provideDefaults(callbacks));
+                    request(ensureDefaults(callbacks));
                 },    
             },    
         });
