@@ -117,6 +117,17 @@ export default class AsyncStream {
         return AsyncStream.from(values);    
     }
 
+    static repeat({ what, times = null }) {
+        return new AsyncStream(callbacks => {
+            if (times === null || times > 0) {
+                callbacks.continue(AsyncStream.repeat({ what, times: (times === null) ? null : times - 1 }));
+                callbacks.yield(what);
+            } else {
+                callbacks.break();
+            }
+        });    
+    }
+
     static count({ from = 0, to = Number.MAX_SAFE_INTEGER, by = 1 }) {
         return new AsyncStream(callbacks => {
             if (by > 0 && from >= to || by < 0 && from <= to) {
