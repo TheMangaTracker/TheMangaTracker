@@ -1,5 +1,7 @@
 'use strict';
 
+import '/thirdparty/jquery.js';
+
 function ensureDefaults(callbacks) {
     let isFull = callbacks.addAbort
               && callbacks.deleteAbort
@@ -285,7 +287,7 @@ export default class AsyncStream {
         settings = Object.create(settings);
 
         if (!settings.configure) {
-            settings.configure = (item) => {
+            settings.configure = item => {
                 return item;
             };
         }
@@ -324,6 +326,11 @@ export default class AsyncStream {
                 callbacks.deleteAbort(abort);
             })
             .done((data, textStatus, jqXHR) => {
+                let contentType = jqXHR.getResponseHeader('Content-Type') || '';
+                if (contentType.startsWith('text/html') && (ajaxSettings.dataType === undefined || ajaxSettings.dataType === 'html')) {
+                    data = new DOMParser().parseFromString(data, 'text/html');
+                }
+
                 callbacks.return([item, data]);
             })
             .fail((jqXHR, textStatus, errorThrown) => {
