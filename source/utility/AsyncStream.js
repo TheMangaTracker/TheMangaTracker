@@ -36,7 +36,7 @@ function ensureDefaults(callbacks) {
     
     if (!callbacks.throw) {
         callbacks.throw = error => {
-            contole.log(error);    
+            console.log(error);    
         };
     }
 
@@ -189,7 +189,7 @@ export default class AsyncStream {
         return this.asyncDo(asynchronize(action));
     }
 
-    ajax(settings) {
+    ajax(settings = {}) {
         settings = Object.create(settings);
 
         if (!settings.configure) {
