@@ -139,6 +139,87 @@ export default class AsyncStream {
         });    
     }
 
+    static zip(...streams) {
+        console.assert(streams.length >= 2, 'AsyncStream.zip requires at least two arguments.');
+
+        return new AsyncStream(callbacks => {
+            let aborts = new Set();
+            let superAbort = () => {
+                for (let abort of aborts) {
+                    abort();    
+                }    
+            };
+
+            let firsts = [];
+            let firstCount = 0;
+            let rests = [];
+            let restCount = 0;
+
+            for (let i = 0; i < streams.length; ++i) {
+                streams[i].request(refine(callbacks, {
+                    addAbort(abort) {
+                        aborts.add(abort);
+                        if (aborts.size == 1) {
+                            callbacks.addAbort(superAbort);    
+                        }
+                    },
+
+                    deleteAbort(abort) {
+                        if (aborts.size == 1) {
+                            callbacks.deleteAbort(superAbort);    
+                        }
+                        aborts.delete(abort);
+                    },
+
+                    break() {
+                        callbacks.break();
+                        superAbort();
+                    },
+
+                    yield(first) {
+                        firsts[i] = first;
+                        if (++firstCount == streams.length) {
+                            callbacks.yield(firsts);     
+                        }
+                    },
+
+                    continue(rest) {
+                        rests[i] = rest;
+                        if (++restCount == streams.length) {
+                            callbacks.continue(AsyncStream.zip(...rests));     
+                        }
+                    },
+                }));   
+            }
+        });
+    }
+
+    zip(...others) {
+        return AsyncStream.zip(this, ...others);    
+    }
+
+    static chain(first, ...rest) {
+        return first.chain(...rest);
+    }
+
+    chain(other, ...rest) {
+        if (rest.length > 0) {
+            other = other.chain(...rest);    
+        }
+
+        return new AsyncStream(callbacks => {
+            this.request(refine(callbacks, {
+                break() {
+                    other.request(callbacks);  
+                },
+
+                continue(rest) {
+                    callbacks.continue(rest.chain(other));
+                },
+            }));    
+        });
+    }
+
     asyncMap(transform) {
         return new AsyncStream(callbacks => {
             this.request(refine(callbacks, {
@@ -317,27 +398,13 @@ export default class AsyncStream {
         return this.asyncBreakNextIf(asynchronize(predicate));
     }
 
-    chain(that) {
-        return new AsyncStream(callbacks => {
-            this.request(refine(callbacks, {
-                break() {
-                    that.request(callbacks);  
-                },
-
-                continue(rest) {
-                    callbacks.continue(rest.chain(that));
-                },
-            }));    
-        });
-    }
-
-    get flatten() {
+    flatten() {
         let rest;
 
         return new AsyncStream(callbacks => {
             this.request(refine(callbacks, {
                 yield(first) {
-                    first.chain(rest.flatten).request(callbacks);
+                    first.chain(rest.flatten()).request(callbacks);
                 },
 
                 continue(_rest) {
