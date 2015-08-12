@@ -2,6 +2,8 @@
 
 import '/thirdparty/angular.js';
 
+import asyncCall from '/utility/asyncCall.js';
+
 import search from '/sites/search.js';
 
 angular.module('page', [])
@@ -40,11 +42,17 @@ angular.module('page', [])
             },
 
             continue(mangas) {
-                mangas.request(callbacks);     
+                asyncCall(() => {
+                    if (abortSearch !== null) {
+                        mangas.request(callbacks);     
+                    }
+                });
             },
         };    
 
-        search({ name: $scope.name }).request(callbacks);
+        asyncCall(() => {
+            search({ title: $scope.name }).request(callbacks);
+        });
 
         abortSearch = () => {
             for (let abort of aborts) {
