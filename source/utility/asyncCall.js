@@ -16,10 +16,10 @@ window.addEventListener('message', ({ source, data: { tag, id } }) => {
     callable();
 });
 
-export default function asyncCall(callable) {
+export default function asyncCall(callable, ...args) {
     let id = nextId++;
 
-    callables.set(id, callable);
+    callables.set(id, () => callable(...args));
 
     window.postMessage({ tag: 'asyncCall', id }, '*');
 }
