@@ -217,13 +217,13 @@ export default class AsyncStream {
                 streams[i].request(refine(callbacks, {
                     addAbort(abort) {
                         aborts.add(abort);
-                        if (aborts.size == 1) {
+                        if (aborts.size === 1) {
                             callbacks.addAbort(superAbort);    
                         }
                     },
 
                     deleteAbort(abort) {
-                        if (aborts.size == 1) {
+                        if (aborts.size === 1) {
                             callbacks.deleteAbort(superAbort);    
                         }
                         aborts.delete(abort);
@@ -236,14 +236,14 @@ export default class AsyncStream {
 
                     yield(first) {
                         firsts[i] = first;
-                        if (++firstCount == streams.length) {
+                        if (++firstCount === streams.length) {
                             callbacks.yield(firsts);     
                         }
                     },
 
                     continue(rest) {
                         rests[i] = rest;
-                        if (++restCount == streams.length) {
+                        if (++restCount === streams.length) {
                             callbacks.continue(AsyncStream.zip(...rests));     
                         }
                     },
