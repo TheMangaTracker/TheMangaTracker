@@ -339,38 +339,8 @@ export default class AsyncStream {
         return this.asyncDo(asynchronize(action));
     }
 
-    ajax(settings = {}) {
-        settings = Object.create(settings);
-
-        if (!settings.configure) {
-            settings.configure = item => {
-                return item;
-            };
-        }
-
-        if (!settings.asyncConfigure) {
-            settings.asyncConfigure = asynchronize(settings.configure);
-        }
-
-        if (!settings.integrate) {
-            settings.integrate = (item, data) => {
-                return data;
-            };
-        }
-
-        if (!settings.asyncIntegrate) {
-            settings.asyncIntegrate = asynchronize(settings.integrate);
-        }
-
-        return this
-        .asyncMap((callbacks, item) => {
-            settings.asyncConfigure(refine(callbacks, {
-                return(ajaxSettings) {
-                    callbacks.return([item, ajaxSettings]);    
-                },
-            }), item);    
-        })
-        .asyncMap((callbacks, [item, ajaxSettings]) => {
+    ajax() {
+        return this.asyncMap((callbacks, ajaxSettings) => {
             let aborted = false;
             let abort = () => {
                 aborted = true;
@@ -386,8 +356,7 @@ export default class AsyncStream {
                 if (contentType.startsWith('text/html') && (ajaxSettings.dataType === undefined || ajaxSettings.dataType === 'html')) {
                     data = new DOMParser().parseFromString(data, 'text/html');
                 }
-
-                callbacks.return([item, data]);
+                callbacks.return(data);
             })
             .fail((jqXHR, textStatus, errorThrown) => {
                 if (!aborted) {
@@ -396,9 +365,6 @@ export default class AsyncStream {
             });
 
             callbacks.addAbort(abort);
-        })    
-        .asyncMap((callbacks, [item, data]) => {
-            settings.asyncIntegrate(callbacks, item, data);    
         });
     }
 
