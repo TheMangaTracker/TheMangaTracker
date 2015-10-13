@@ -79,16 +79,76 @@ function asynchronize(transform) {
     };    
 }
 
+let REQUEST = Symbol('REQUEST');
+
 export default class AsyncStream {
-    constructor(request = cbs => { cbs.break(); }) {
-        Object.defineProperties(this, {
-            request: {
-                value(callbacks) {
-                    request(ensureDefaults(callbacks));
-                },    
-            },    
-        });
+    constructor(request = callbacks => { callbacks.break(); }) {
+        this[REQUEST] = callbacks => {
+            let queue = [callbacks];
+
+            this[REQUEST] = callbacks => {
+                queue.push(callbacks);
+            };
+
+            let rest;
+            request(refine(ensureDefaults(callbacks), {
+                break: () => {
+                    let i = 0;
+                    while (i < queue.length) {
+                        let callbacks = queue[i];
+                        callbacks.break();
+                        ++i;
+                    }
+                    this[REQUEST] = callbacks => {
+                        callbacks.break();
+                    };
+                },
+
+                yield: first => {
+                    let i = 0;
+                    while (i < queue.length) {
+                        let callbacks = queue[i];
+                        callbacks.yield(first);
+                        ++i;
+                    }
+                    this[REQUEST] = callbacks => {
+                        callbacks.continue(rest);
+                        callbacks.yield(first);
+                    };
+                },
+
+                continue: _rest => {
+                    rest = _rest;
+                    let i = 0;
+                    while (i < queue.length) {
+                        let callbacks = queue[i];
+                        callbacks.continue(rest);
+                        ++i;
+                    }
+                    this[REQUEST] = callbacks => {
+                        callbacks.continue(rest);
+                        queue.push(callbacks);
+                    };
+                },
+
+                throw: error => {
+                    let i = 0;
+                    while (i < queue.length) {
+                        let callbacks = queue[i];
+                        callbacks.throw(error);
+                        ++i;
+                    }
+                    this[REQUEST] = callbacks => {
+                        callbacks.throw(error);
+                    };
+                },
+            }));
+        };  
     }   
+
+    request(callbacks) {
+        this[REQUEST](callbacks);
+    }
    
     static from(iterator) {
         return new AsyncStream(callbacks => {
