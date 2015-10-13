@@ -119,14 +119,10 @@ export default class AsyncStream {
         return AsyncStream.from(values);    
     }
 
-    static repeat({ what, times = null }) {
+    static repeat(what) {
         return new AsyncStream(callbacks => {
-            if (times === null || times > 0) {
-                callbacks.continue(AsyncStream.repeat({ what, times: (times === null) ? null : times - 1 }));
-                callbacks.yield(what);
-            } else {
-                callbacks.break();
-            }
+            callbacks.continue(AsyncStream.repeat(what));
+            callbacks.yield(what);
         });    
     }
 

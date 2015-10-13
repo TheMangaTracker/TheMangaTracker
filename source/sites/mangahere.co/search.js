@@ -39,7 +39,7 @@ export default function search(query) {
 
         return form.serializeArray();
     })
-    .map(data => AsyncStream.repeat({ what: data })).flatten()
+    .map(AsyncStream.repeat).flatten()
     .enumerate({ from: 1 })
     .map(([page, data]) => {
         return {
