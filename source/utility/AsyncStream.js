@@ -149,6 +149,10 @@ export default class AsyncStream {
     request(callbacks) {
         this[REQUEST](callbacks);
     }
+
+    $(transform) {
+        return transform(this);
+    }
    
     static from(iterator) {
         return new AsyncStream(callbacks => {
