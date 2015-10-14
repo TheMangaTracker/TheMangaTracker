@@ -4,7 +4,7 @@ import '/thirdparty/angular.js';
 
 import asyncCall from '/utility/asyncCall.js';
 
-import search from '/sites/search.js';
+import sites from '/sites.js';
 
 angular.module('page', [])
 .controller('page', $scope => {
@@ -48,10 +48,11 @@ angular.module('page', [])
                     }
                 });
             },
+
         };    
 
         asyncCall(() => {
-            search({ title: $scope.name }).request(callbacks);
+            sites.search({ title: $scope.name }).request(callbacks);
         });
 
         abortSearch = () => {
