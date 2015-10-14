@@ -34,9 +34,16 @@ let sites = {
             % for no in range(len(sites)):
             site${ no }${ '' if loop.last else ',' }
             % endfor
-        )
-        .map(site => site.search(query))
-        .flatten();  // TODO: make this first-loaded first-returned  
+        ).map(site => {
+            return site.search(query)
+            .map(result => {
+                return {
+                    mangaSite: site,
+                    mangaTitle: result.mangaTitle,
+                    manga: result.manga,
+                };
+            });
+        }).flatten();  // TODO: make this first-loaded first-returned  
     }
 };
 

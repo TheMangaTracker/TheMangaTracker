@@ -18,7 +18,7 @@ angular.module('page', [])
             return;
         }
 
-        $scope.mangas = [];
+        $scope.results = [];
 
         let aborts = new Set();
 
@@ -35,16 +35,16 @@ angular.module('page', [])
                 abortSearch = null;    
             },
 
-            yield(manga) {
+            yield(result) {
                 $scope.$apply(() => {
-                    $scope.mangas.push(manga);    
+                    $scope.results.push(result);    
                 });
             },
 
-            continue(mangas) {
+            continue(results) {
                 asyncCall(() => {
                     if (abortSearch !== null) {
-                        mangas.request(callbacks);     
+                        results.request(callbacks);     
                     }
                 });
             },

@@ -54,7 +54,7 @@ let site = {
         .map(document => AsyncStream.from($('.result_search a.manga_info', document).toArray())).flatten()
         .map(anchor => {
             return {
-                title: $(anchor).text().trim(),
+                mangaTitle: $(anchor).text().trim(),
                 manga: anchor.href,
             };
         });
