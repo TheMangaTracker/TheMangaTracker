@@ -91,7 +91,7 @@ export default class AsyncStream {
             };
 
             let rest;
-            request(refine(ensureDefaults(callbacks), {
+            request(refine(callbacks, {
                 break: () => {
                     let i = 0;
                     while (i < queue.length) {
@@ -147,7 +147,7 @@ export default class AsyncStream {
     }   
 
     request(callbacks) {
-        this[REQUEST](callbacks);
+        this[REQUEST](ensureDefaults(callbacks));
     }
 
     $(transform) {
