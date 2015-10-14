@@ -432,9 +432,8 @@ export default class AsyncStream {
     }
 
     flatten() {
-        let rest;
-
         return new AsyncStream(callbacks => {
+            let rest;
             this.request(refine(callbacks, {
                 yield(first) {
                     first.chain(rest.flatten()).request(callbacks);
