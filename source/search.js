@@ -20,15 +20,11 @@ angular.module('page', [])
 
         $scope.results = [];
 
-        let aborts = new Set();
+        let abort = null;
 
         let callbacks = {
-            addAbort(abort) {
-                aborts.add(abort); 
-            },
-
-            deleteAbort(abort) {
-                aborts.delete(abort); 
+            setAbort(_abort) {
+                abort = _abort; 
             },
 
             break() {
@@ -56,7 +52,7 @@ angular.module('page', [])
         });
 
         abortSearch = () => {
-            for (let abort of aborts) {
+            if (abort !== null) {
                 abort();
             }
         };

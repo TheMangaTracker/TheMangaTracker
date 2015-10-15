@@ -3,8 +3,7 @@
 import '/thirdparty/jquery.js';
 
 function ensureDefaults(callbacks) {
-    let isFull = callbacks.addAbort
-              && callbacks.deleteAbort
+    let isFull = callbacks.setAbort
               && callbacks.break
               && callbacks.yield
               && callbacks.continue
@@ -16,12 +15,8 @@ function ensureDefaults(callbacks) {
 
     callbacks = Object.create(callbacks);
 
-    if (!callbacks.addAbort) {
-        callbacks.addAbort = abort => {};
-    }
-
-    if (!callbacks.deleteAbort) {
-        callbacks.deleteAbort = abort => {};
+    if (!callbacks.setAbort) {
+        callbacks.setAbort = abort => {};
     }
 
     if (!callbacks.break) {
@@ -57,8 +52,7 @@ function refine(callbacks, newCallbacks) {
 
 function singularize(callbacks) {
     return {
-        addAbort: callbacks.addAbort.bind(callbacks),
-        deleteAbort: callbacks.deleteAbort.bind(callbacks),
+        setAbort: callbacks.setAbort.bind(callbacks),
         return: callbacks.yield.bind(callbacks),
         throw: callbacks.throw.bind(callbacks),
     };
@@ -203,53 +197,55 @@ export default class AsyncStream {
 
     static zip(...streams) {
         console.assert(streams.length >= 2, 'AsyncStream.zip requires at least two arguments.');
-
         return new AsyncStream(callbacks => {
-            let aborts = new Set();
-            let superAbort = () => {
-                for (let abort of aborts) {
-                    abort();    
-                }    
-            };
-
-            let firsts = [];
-            let firstCount = 0;
-            let rests = [];
-            let restCount = 0;
-
+            let abortActive = false;
+            let aborts = new Map();
+            let firsts = new Map();
+            let rests = new Map();
             for (let i = 0; i < streams.length; ++i) {
                 streams[i].request(refine(callbacks, {
-                    addAbort(abort) {
-                        aborts.add(abort);
-                        if (aborts.size === 1) {
-                            callbacks.addAbort(superAbort);    
+                    setAbort(abort) {
+                        if (abort === null) {
+                            aborts.delete(i);
+                            if (aborts.size === 0 && abortActive) {
+                                abortActive = false;
+                                callbacks.setAbort(null);
+                            }
+                        } else {
+                            aborts.set(i, abort);
+                            if (aborts.size === 1 && !abortActive) {
+                                abortActive = true;
+                                callbacks.setAbort(() => {
+                                    for (let abort of aborts.values()) {
+                                        abort();    
+                                    }    
+                                });
+                            }
                         }
-                    },
-
-                    deleteAbort(abort) {
-                        if (aborts.size === 1) {
-                            callbacks.deleteAbort(superAbort);    
-                        }
-                        aborts.delete(abort);
                     },
 
                     break() {
-                        callbacks.break();
                         superAbort();
+                        callbacks.break();
                     },
 
                     yield(first) {
-                        firsts[i] = first;
-                        if (++firstCount === streams.length) {
-                            callbacks.yield(firsts);     
+                        firsts.set(i, first);
+                        if (firsts.size === streams.length) {
+                            callbacks.yield([...firsts.values()]);     
                         }
                     },
 
                     continue(rest) {
-                        rests[i] = rest;
-                        if (++restCount === streams.length) {
-                            callbacks.continue(AsyncStream.zip(...rests));     
+                        rests.set(i, rest);
+                        if (rests.size === streams.length) {
+                            callbacks.continue(AsyncStream.zip(...rests.values()));     
                         }
+                    },
+
+                    throw(error) {
+                        superAbort();
+                        callbacks.throw(error);
                     },
                 }));   
             }
@@ -301,9 +297,8 @@ export default class AsyncStream {
     }
     
     asyncFold(initial, combine) {
-        let rest;
-
         return new AsyncStream(callbacks => {
+            let rest;
             this.request(callbacks.refine({
                 break() {
                     callbacks.continue(new AsyncStream());
@@ -346,14 +341,10 @@ export default class AsyncStream {
     ajax() {
         return this.asyncMap((callbacks, ajaxSettings) => {
             let aborted = false;
-            let abort = () => {
-                aborted = true;
-                jqXHR.abort();  
-            };
 
             let jqXHR = $.ajax(ajaxSettings)
             .always(() => {
-                callbacks.deleteAbort(abort);
+                callbacks.setAbort(null);
             })
             .done((data, textStatus, jqXHR) => {
                 let contentType = jqXHR.getResponseHeader('Content-Type') || '';
@@ -368,14 +359,16 @@ export default class AsyncStream {
                 }
             });
 
-            callbacks.addAbort(abort);
+            callbacks.setAbort(() => {
+                aborted = true;
+                jqXHR.abort();  
+            });
         });
     }
 
     asyncBreakIf(predicate) {
         return new AsyncStream(callbacks => {
             let rest;
-
             this.request(refine(callbacks, {
                 yield(first) {
                     predicate(refine(singularize(callbacks), {
@@ -404,7 +397,6 @@ export default class AsyncStream {
     asyncBreakNextIf(predicate) {
         return new AsyncStream(callbacks => {
             let rest;
-
             this.request(refine(callbacks, {
                 yield(first) {
                     predicate(refine(singularize(callbacks), {
