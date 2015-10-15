@@ -44,6 +44,7 @@ function refine(callbacks, newCallbacks) {
     let refinedCallbacks = Object.create(callbacks);
 
     for (let field of Object.keys(newCallbacks)) {
+        console.assert(field in refinedCallbacks, 'Can only refine existing callbacks.');
         refinedCallbacks[field] = newCallbacks[field];    
     }
 
