@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html ng-controller="page">
     <head>
-        <script src="/thirdparty/require.js" data-main="./search.js"></script>
+        <script src="/quasiAmd.js"></script>
+        <script src="search.js"></script>
         <title>{{ title }} - ${ CONFIG['name'] }</title>
     </head>
     <body>
-        <input type="text" data-ng-model="name"></input>
-        <button data-ng-click="search()">Search!</button>
-        <div data-ng-repeat="result in results track by $index">
-            {{ $index }}: <a href="{{ results.manga }}">{{ result.mangaTitle }}</a>
+        <input type="text" ng-model="name"></input>
+        <button ng-click="search()">Search!</button>
+        <div ng-repeat="result in results track by $index">
+            {{ $index }}: <a href="{{ result.manga }}">{{ result.mangaTitle }}</a>
         </div>
     </body>
 </html>

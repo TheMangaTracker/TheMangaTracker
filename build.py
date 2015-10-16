@@ -15,8 +15,9 @@ render('manifest.json', CONFIG=CONFIG, sites=sites)
 render('sites.js', CONFIG=CONFIG, sites=sites)
 render('search.html', CONFIG=CONFIG)
 
+transpile('quasiAmd.js', disableModuleWrap=True)
 for file in ['search.js', 'sites.js'] + glob('sites/*.js') + glob('utility/**/*.js'):
-    transpile(file);
+    transpile(file)
 
 for file in glob('**/*.yaml'):
     remove(file)

@@ -3,7 +3,7 @@
 import AsyncStream from '/utility/AsyncStream.js';
 
 % for no, site in enumerate(sites):
-import site${ no } from './sites/${ site }.js';
+import site${ no } from 'sites/${ site }.js';
 % endfor
 
 let sites = {
