@@ -199,24 +199,22 @@ export default class AsyncStream {
     static zip(...streams) {
         console.assert(streams.length >= 2, 'AsyncStream.zip requires at least two arguments.');
         return new AsyncStream(callbacks => {
-            let abortActive = false;
             let aborts = new Map();
-            let firsts = new Map();
-            let rests = new Map();
+            let superAbort = null;
+            let firstCount = 0, firsts = [];
+            let restCount = 0, rests = [];
             for (let i = 0; i < streams.length; ++i) {
                 streams[i].request(refine(callbacks, {
                     setAbort(abort) {
                         if (abort === null) {
                             aborts.delete(i);
-                            if (aborts.size === 0 && abortActive) {
-                                abortActive = false;
-                                callbacks.setAbort(null);
+                            if (aborts.size === 0) {
+                                callbacks.setAbort(superAbort = null);
                             }
                         } else {
                             aborts.set(i, abort);
-                            if (aborts.size === 1 && !abortActive) {
-                                abortActive = true;
-                                callbacks.setAbort(() => {
+                            if (superAbort === null) {
+                                callbacks.setAbort(superAbort = () => {
                                     for (let abort of aborts.values()) {
                                         abort();    
                                     }    
@@ -226,26 +224,30 @@ export default class AsyncStream {
                     },
 
                     break() {
-                        superAbort();
+                        if (superAbort !== null) {
+                            superAbort();
+                        }
                         callbacks.break();
                     },
 
                     yield(first) {
-                        firsts.set(i, first);
-                        if (firsts.size === streams.length) {
-                            callbacks.yield([...firsts.values()]);     
+                        firsts[i] = first; ++firstCount;
+                        if (firstCount === streams.length) {
+                            callbacks.yield(firsts);     
                         }
                     },
 
                     continue(rest) {
-                        rests.set(i, rest);
-                        if (rests.size === streams.length) {
-                            callbacks.continue(AsyncStream.zip(...rests.values()));     
+                        rests[i] = rest; ++restCount;
+                        if (restCount === streams.length) {
+                            callbacks.continue(AsyncStream.zip(...rests));     
                         }
                     },
 
                     throw(error) {
-                        superAbort();
+                        if (superAbort !== null) {
+                            superAbort();
+                        }
                         callbacks.throw(error);
                     },
                 }));   
@@ -277,6 +279,75 @@ export default class AsyncStream {
                 },
             }));    
         });
+    }
+
+    static join(...streams) {
+        if (streams.length === 0) {
+            return AsyncStream();
+        }
+
+        if (streams.length === 1) {
+            return streams[0];
+        }
+
+        return new AsyncStream(callbacks => {
+            let aborts = new Map();
+            let superAbort = null;
+            let done = false;
+            for (let stream of streams.slice()) {
+                let rest;
+                stream.request(refine(callbacks, {
+                    setAbort(abort) {
+                        if (abort === null) {
+                            aborts.delete(stream);
+                            if (aborts.size === 0) {
+                                callbacks.setAbort(superAbort = null);
+                            }
+                        } else {
+                            aborts.set(stream, abort);
+                            if (superAbort === null) {
+                                callbacks.setAbort(superAbort = () => {
+                                    for (let abort of aborts.values()) {
+                                        abort();    
+                                    }    
+                                });
+                            }
+                        }
+                    },
+
+                    break() {
+                        streams.splice(streams.indexOf(stream), 1);
+                    },
+
+                    yield(first) {
+                        if (!done) {
+                            done = true;
+
+                            streams.splice(streams.indexOf(stream), 1);
+                            streams.push(rest);
+
+                            callbacks.continue(AsyncStream.join(...streams));
+                            callbacks.yield(first);
+                        }
+                    },
+
+                    continue(_rest) {
+                        rest = _rest;
+                    },
+
+                    throw(error) {
+                        if (superAbort !== null) {
+                            superAbort();
+                        }
+                        callbacks.throw(error);
+                    }
+                }));   
+            }
+        });
+    }
+
+    join(...others) {
+        return AsyncStream.join(this, ...others);
     }
 
     asyncMap(transform) {

@@ -1,6 +1,7 @@
 'use strict';
 
 import AsyncStream from '/utility/AsyncStream.js';
+import languages from '/utility/languages.js';
 
 % for no, site in enumerate(sites):
 import site${ no } from 'sites/${ site }.js';
@@ -8,42 +9,77 @@ import site${ no } from 'sites/${ site }.js';
 
 let sites = {
     search(query) {
-        query = Object.create(query);
+        query = (a => {
+            let b = {};
 
-        if (query.title === undefined) {
-            query.title = null;    
-        }
+            if (a.title === undefined) {
+                b.title = '';
+            } else {
+                b.title = a.title;
+                console.assert(b.title.constructor === String);
+            }
 
-        if (query.writer === undefined) {
-            query.writer = null;    
-        }
+            if (a.writer === undefined) {
+                b.writer = '';
+            } else {
+                b.writer = a.writer;
+                console.assert(b.writer.constructor === String);
+            }
 
-        if (query.artist === undefined) {
-            query.artist = null;    
-        }
+            if (a.artist === undefined) {
+                b.artist = '';
+            } else {
+                b.artist = a.artist;
+                console.assert(b.artist.constructor === String);
+            }
 
-        if (query.isComplete === undefined) {
-            query.isComplete = null;    
-        }
+            if (a.complete === undefined) {
+                b.complete = null;    
+            } else {
+                b.complete = a.complete;
+                console.assert(b.complete === false ||
+                               b.complete === true ||
+                               b.complete === null);
+            }
 
-        if (query.leftToRight === undefined) {
-            query.leftToRight = null;    
-        }
+            if (a.readingDirection === undefined) {
+                b.readingDirection = null;    
+            } else {
+                b.readingDirection = a.readingDirection;    
+                console.assert(b.readingDirection === '<' ||
+                               b.readingDirection === '>' ||
+                               b.readingDirection === null);
+            }
 
-        return AsyncStream.of(
+            if (a.languages === undefined) {
+                b.languages = new Set(languages.keys());
+            } else {
+                b.languages = new Set(a.languages);
+                for (let language of b.languages) {
+                    console.assert(languages.has(language));
+                }
+            }
+
+            return b;
+        })(query);
+
+        let searchStreams = [
             % for no in range(len(sites)):
-            site${ no }${ '' if loop.last else ',' }
+            site${ no },
             % endfor
-        ).map(site => {
+        ].map(site => {
             return site.search(query)
-            .map(result => {
-                return {
-                    mangaSite: site,
-                    mangaTitle: result.mangaTitle,
-                    manga: result.manga,
-                };
-            });
-        }).flatten();  // TODO: make this first-loaded first-returned  
+                .map(result => {
+                    return {
+                        mangaSite: site,
+                        mangaTitle: result.mangaTitle,
+                        manga: result.manga,
+                    };
+                })
+            ;
+        });
+
+        return AsyncStream.join(...searchStreams);
     }
 };
 
