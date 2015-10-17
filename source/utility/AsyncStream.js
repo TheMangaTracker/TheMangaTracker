@@ -282,6 +282,21 @@ define([
             });
         }
 
+        chainItems() {
+            return new AsyncStream(callbacks => {
+                let rest;
+                this.request(refine(callbacks, {
+                    yield(first) {
+                        first.chain(rest.chainItems()).request(callbacks);
+                    },
+
+                    continue(_rest) {
+                        rest = _rest;
+                    },
+                }));    
+            });
+        }
+
         static join(...streams) {
             if (streams.length === 0) {
                 return AsyncStream();
@@ -509,21 +524,6 @@ define([
 
         breakNextIf(predicate) {
             return this.asyncBreakNextIf(asynchronize(predicate));
-        }
-
-        flatten() {
-            return new AsyncStream(callbacks => {
-                let rest;
-                this.request(refine(callbacks, {
-                    yield(first) {
-                        first.chain(rest.flatten()).request(callbacks);
-                    },
-
-                    continue(_rest) {
-                        rest = _rest;
-                    },
-                }));    
-            });
         }
 
         enumerate({ from = 0 }) {

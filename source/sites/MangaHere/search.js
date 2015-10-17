@@ -39,7 +39,7 @@ define([
                     };
                 })
                 .map(data => AsyncStream.repeat(data))
-                .flatten()
+                .chainItems()
                 .enumerate({ from: 1 })
                 .map(([pageNo, data]) => {
                     return {
@@ -52,7 +52,7 @@ define([
                 .breakIf(document => $('.result_search .next-page', document).length == 0)  // nothing found
                 .breakNextIf(document => $('.result_search .next-page .next', document).length == 0)  // no next page
                 .map(document => AsyncStream.from($('.result_search a.manga_info', document).toArray()))
-                .flatten()
+                .chainItems()
                 .map(anchor => {
                     return {
                         id: anchor.href,
