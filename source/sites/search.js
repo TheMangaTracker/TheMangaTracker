@@ -71,7 +71,7 @@ define([
             .asyncMap((callbacks, site) => {
                 require([
                     './' + site + '/search.js',
-                ], (                   search    ) => {
+                ], (                search    ) => {
                     callbacks.return([site, search]);     
                 });
             })
