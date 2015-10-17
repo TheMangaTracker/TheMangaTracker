@@ -45,7 +45,7 @@ define([
                     return {
                         url: 'http://' + subdomain + '.mangahere.co' + data.action,
                         method: data.method,
-                        data: data.params.concat([{ key: 'page', value: pageNo }]),
+                        data: data.params.concat([{ name: 'page', value: pageNo }]),
                     };
                 })
                 .ajax()
