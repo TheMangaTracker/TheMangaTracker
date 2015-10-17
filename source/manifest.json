@@ -1,25 +1,26 @@
 {
     "manifest_version": 2,
 
-    "name": "${ CONFIG['name'] }",  
-    "version": "${ CONFIG['version'] }",
-    "description": "${ CONFIG['description'] }",
-    "icons": { "${ get_image_size('icon.png') }": "icon.png" },
+    "name": "{{{name}}}",  
+    "version": "{{{version}}}",
+    "description": "{{{description}}}",
+
+    "icons": { "{{{icon.size}}}": "{{{icon.path}}}" },
 
     "permissions": [
-        "storage",
+        {{#siteDomains}}
+            "*://*.{{{.}}}/*",
+        {{/siteDomains}}
 
-      % for site in sites:
-        "*://*.${ site }/*"${ '' if loop.last else ',' }
-      % endfor
+        "storage"
     ],
+
+    "content_security_policy": "script-src 'self'{{#remoteScriptOrigins}} {{{.}}}{{/remoteScriptOrigins}}; object-src 'self'",
 
     "background": {
         "persistent": false,
         "scripts": [
-          % for script in ['thirdparty/jquery.js'] + ['core.js'] + glob('core/**/*.js'):
-            "${ script }"${ '' if loop.last else ',' }
-          % endfor
+            "core.js"
         ]
     },
 

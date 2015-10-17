@@ -1,25 +1,43 @@
 #!/usr/bin/env python3
 # coding: UTF-8
 
-from itertools import chain
+from urllib.parse import urlparse, urlunparse
 from buildtools import *
 
-CONFIG = read_yaml('config.yaml')
+sites = {s.name for s in glob('sites/*') if s.is_dir()}
+thirdparty = read_yaml('thirdparty.yaml')
+extension = read_yaml('extension.yaml')
+require_url = read_yaml('require-url.yaml')
 
-for file, url in read_yaml('thirdparty.yaml').items():
-    download('thirdparty' / Path(file), url)
+render('sites.js', {
+    'sites': sites,
+})
 
-sites = [s.stem for s in glob('sites/*.js')]
+render('require-config.js', {
+    'thirdparty': [{ 'name': name, 'url': url[:-3] if url.endswith('.js') else url } for name, url in thirdparty.items()],
+})
 
-render('manifest.json', CONFIG=CONFIG, sites=sites)
-render('sites.js', CONFIG=CONFIG, sites=sites)
-render('search.html', CONFIG=CONFIG)
+render('search.html', {
+    'requireUrl': require_url,
+    'extensionName': extension['name'],
+})
 
-transpile('quasiAmd.js', disableModuleWrap=True)
-for file in ['search.js', 'sites.js'] + glob('sites/*.js') + glob('utility/**/*.js'):
-    transpile(file)
+render('manifest.json', {
+    'name': extension['name'],
+    'version': extension['version'],
+    'description': extension['description'].replace('\n', '\\n'),
+    'icon': {
+        'path': '/icon.png',
+        'size': get_image_size('icon.png'),
+    },
+    'siteDomains': {d for s in sites for d in read_yaml(Path('sites') / s / 'domains.yaml')},
+    'remoteScriptOrigins': {urlunparse(urlparse(s)[:2] + ('',) * 4) for s in [require_url] + list(thirdparty.values())},
+})
 
-for file in glob('**/*.yaml'):
-    remove(file)
+for p in glob('**/*.js'):
+    transpile(p)
+
+for p in glob('**/*.yaml'):
+    remove(p)
 
 finish()

@@ -1,16 +1,22 @@
+{{=[[ ]]=}}
 <!DOCTYPE html>
 <html ng-controller="page">
     <head>
-        <script src="/quasiAmd.js"></script>
+        <script src="[[requireUrl]]"></script>
+        <script src="/require-config.js"></script>
         <script src="search.js"></script>
-        <title>{{ title }} - ${ CONFIG['name'] }</title>
+        <title>Search - [[extensionName]]</title>
     </head>
     <body>
-        <input type="text" ng-model="name"></input>
-        <button ng-click="search()">Search!</button>
-        <div ng-repeat="result in results track by $index">
-            {{ $index }}: <a href="{{ result.manga }}">{{ result.mangaTitle }}</a>
+        <div>
+            Title: <input type="text" ng-model="title"></input>
         </div>
+        <button ng-click="toggleSearch()">Search!</button>
+        <ol>
+            <li ng-repeat="manga in mangas track by $index">
+                <a href="{{manga.id}}">{{manga.title}}</a> on {{manga.site}}
+            </li>
+        </ol>
     </body>
 </html>
 

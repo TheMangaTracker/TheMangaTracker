@@ -1,12 +1,10 @@
 'use strict';
 
-import '/thirdparty/jquery.js';
-
-import AsyncStream from '/utility/AsyncStream.js';
-
-let site = {
-    search(query) {
-        let searchOn = subdomain => {
+define([
+    '/utility/AsyncStream.js', 'jquery',
+], (          AsyncStream    ,   $     ) => {
+    function search(query) {
+        function searchOn(subdomain) {
             return AsyncStream.of('http://' + subdomain + '.mangahere.co/advsearch.htm')
                 .ajax()
                 .map(document => {
@@ -57,8 +55,8 @@ let site = {
                 .flatten()
                 .map(anchor => {
                     return {
-                        mangaTitle: $(anchor).text().trim(),
-                        manga: anchor.href,
+                        id: anchor.href,
+                        title: $(anchor).text().trim(),
                     };
                 })
             ;
@@ -76,7 +74,6 @@ let site = {
 
         return AsyncStream.join(...streams);
     }
-};
 
-export default site;
-
+    return search;
+});

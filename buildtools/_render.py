@@ -7,26 +7,17 @@ __all__ = [
 from os import chdir
 from pathlib import Path
 from itertools import chain
-from mako.template import Template
+import pystache
 
 from ._make_parents import *
 
-def render(target, source=None, **variables):
-    from ._tools import tools
+_renderer = pystache.Renderer()
 
+def render(target, context):
     target = Path(target)
-    source = target if source is None else Path(source) 
-
-    template = Template(filename=str(source))
-    
-    variables = dict(chain(tools.items(), variables.items()))
-
-    cwd = Path.cwd()
-    chdir(str(source.parent))
-    result = template.render(**variables)
-    chdir(str(cwd))
 
     make_parents(target)
+    result = _renderer.render_path(str(target), context)
     with target.open('w', encoding='UTF-8') as target_file:
         target_file.write(result)
 
