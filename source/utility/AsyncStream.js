@@ -427,6 +427,34 @@ define([
             return this.asyncFold(initial, asynchronize(combine));    
         }
 
+        asyncFilter(predicate) {
+            return new AsyncStream(callbacks => {
+                let rest;
+                this.request(refine(callbacks, {
+                    yield(first) {
+                        predicate(refine(singularize(callbacks), {
+                            return(pass) {
+                                if (pass) {
+                                    callbacks.continue(rest);
+                                    callbacks.yield(first);
+                                } else {
+                                    rest.request(callbacks);
+                                }
+                            }
+                        }), first);
+                    },
+
+                    continue(_rest) {
+                        rest = _rest.asyncFilter(predicate);
+                    },
+                }));    
+            });
+        }
+
+        filter(predicate) {
+            return this.asyncFilter(asynchronize(predicate));    
+        }
+
         asyncDo(action) {
             return this.asyncMap((callbacks, item) => {
                 action(refine(callbacks, {

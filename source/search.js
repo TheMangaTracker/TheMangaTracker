@@ -3,9 +3,18 @@
 require([
     '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'angular',
 ], (  sites    ,         search    ,           asyncCall    ,   ng     ) => {
-    ng.module('page', [])
-    .controller('page', $scope => {
+    let page = ng.module('page', []);
+
+    page.config([
+        '$compileProvider',
+       ( $compileProvider ) => {
+        $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
+    }])
+
+    page.controller('page', $scope => {
         let abortSearch = null;
+
+        $scope.encode = encodeURIComponent;
 
         $scope.toggleSearch = () => {
             if (abortSearch !== null) {

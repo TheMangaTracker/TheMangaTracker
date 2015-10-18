@@ -1,10 +1,15 @@
 'use strict';
 
 define([
-    '/utility/AsyncStream.js', 'jquery',
-], (          AsyncStream    ,   $     ) => {
+    '/utility/AsyncStream.js', '/utility/parseUri.js', 'jquery',
+], (          AsyncStream    ,           parseUri    ,   $     ) => {
+    let languageToSubdomain = [
+        ['en', 'www'],
+        ['es', 'es'],
+    ];
+
     function search(query) {
-        function searchOn(subdomain) {
+        function search(language, subdomain) {
             return AsyncStream.of('http://' + subdomain + '.mangahere.co/advsearch.htm')
                 .ajax()
                 .map(document => {
@@ -55,24 +60,18 @@ define([
                 .chainItems()
                 .map(anchor => {
                     return {
-                        id: anchor.href,
+                        id: parseUri(anchor.href).pathParts[1] + '.' + language,
                         title: $(anchor).text().trim(),
                     };
                 })
             ;
         }
 
-        let streams = [];
-
-        if (query.languages.has('en')) {
-            streams.push(searchOn('www'));
-        }
-
-        if (query.languages.has('es')) {
-            streams.push(searchOn('es'));
-        }
-
-        return AsyncStream.join(...streams);
+        return AsyncStream.from(languageToSubdomain)
+            .filter(([language, subdomain]) => query.languages.has(language))    
+            .map(args => search(...args))
+            .joinItems()
+        ;
     }
 
     return search;

@@ -21,6 +21,10 @@ render('search.html', {
     'requireUrl': require_url,
     'extensionName': extension['name'],
 })
+render('read.html', {
+    'requireUrl': require_url,
+    'extensionName': extension['name'],
+})
 
 render('manifest.json', {
     'name': extension['name'],

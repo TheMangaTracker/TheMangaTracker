@@ -14,7 +14,7 @@
         <button ng-click="toggleSearch()">Search!</button>
         <ol>
             <li ng-repeat="manga in mangas track by $index">
-                <a href="{{manga.id}}">{{manga.title}}</a> on {{manga.site}}
+                <a href="/read.html?site={{encode(manga.site)}}&manga={{encode(manga.id)}}">{{manga.title}}</a>
             </li>
         </ol>
     </body>
