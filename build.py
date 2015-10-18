@@ -21,7 +21,7 @@ render('search.html', {
     'requireUrl': require_url,
     'extensionName': extension['name'],
 })
-render('read.html', {
+render('details.html', {
     'requireUrl': require_url,
     'extensionName': extension['name'],
 })
