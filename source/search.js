@@ -66,8 +66,8 @@ require([
         };
     });
 
-    angular.element(document).ready(() => {
-        angular.bootstrap(document, ['page']);    
+    ng.element(document).ready(() => {
+        ng.bootstrap(document, ['page']);    
     });
 });
 
