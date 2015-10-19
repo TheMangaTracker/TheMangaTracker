@@ -8,7 +8,12 @@
         <title>Details - [[extensionName]]</title>
     </head>
     <body>
-        {{ manga }} at {{ site }}
+        <h1>{{details.title}}</h1>
+        <ul>
+            <li ng-repeat="chapter in details.chapters track by $index">
+                {{ chapter.id }} - {{ chapter.title }}
+            </li>
+        </ul>
     </body>
 </html>
 

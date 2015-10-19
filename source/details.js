@@ -1,8 +1,8 @@
 'use strict';
 
 require([
-    '/sites.js', '/utility/parseUri.js', 'angular',
-], (  sites    ,           parseUri    ,   ng     ) => {
+    '/sites/getDetails.js', '/utility/parseUri.js', 'angular',
+], (        getDetails    ,           parseUri    ,   ng     ) => {
     let page = ng.module('page', []);
 
     page.config([
@@ -13,8 +13,14 @@ require([
 
     page.controller('page', $scope => {
         let params = parseUri(location.href).queryData;
-        $scope.manga = params.manga;
-        $scope.site = params.site;
+        
+        getDetails(params.site, params.manga).request({
+            yield(details) {
+                $scope.$apply(() => {
+                    $scope.details = details;
+                });
+            }
+        }); 
     });
 
     ng.element(document).ready(() => {

@@ -1,16 +1,12 @@
 'use strict';
 
 define([
-    '/utility/AsyncStream.js', '/utility/parseUri.js', 'jquery',
-], (          AsyncStream    ,           parseUri    ,   $     ) => {
-    let languageToSubdomain = [
-        ['en', 'www'],
-        ['es', 'es'],
-    ];
-
+    './languageToSubdomain.js', '/utility/AsyncStream.js', '/utility/parseUri.js', 'jquery',
+], (   languageToSubdomain    ,           AsyncStream    ,           parseUri    ,   $     ) => {
     function search(query) {
-        function search(language, subdomain) {
-            return AsyncStream.of('http://' + subdomain + '.mangahere.co/advsearch.htm')
+        function searchInLanguage(language) {
+            let domain = 'http://' + languageToSubdomain.get(language) + '.mangahere.co';
+            return AsyncStream.of(domain + '/advsearch.htm')
                 .ajax()
                 .map(document => {
                     let form = $(document).find('#searchform');
@@ -48,7 +44,7 @@ define([
                 .enumerate({ from: 1 })
                 .map(([pageNo, data]) => {
                     return {
-                        url: 'http://' + subdomain + '.mangahere.co' + data.action,
+                        url: domain + data.action,
                         method: data.method,
                         data: data.params.concat([{ name: 'page', value: pageNo }]),
                     };
@@ -67,9 +63,9 @@ define([
             ;
         }
 
-        return AsyncStream.from(languageToSubdomain)
-            .filter(([language, subdomain]) => query.languages.has(language))    
-            .map(args => search(...args))
+        return AsyncStream.from(languageToSubdomain.keys())
+            .filter(language => query.languages.has(language))    
+            .map(searchInLanguage)
             .joinItems()
         ;
     }
