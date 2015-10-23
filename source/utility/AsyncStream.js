@@ -1,14 +1,13 @@
 'use strict';
 
 define([
-    'jquery',
-], (  $     ) => {
+], () => {
     function ensureDefaults(callbacks) {
-        let isFull = callbacks.setAbort
-                  && callbacks.break
-                  && callbacks.yield
-                  && callbacks.continue
-                  && callbacks.throw;
+        let isFull = callbacks.abort
+                  && callbacks.onEmpty
+                  && callbacks.onFirst
+                  && callbacks.onRest
+                  && callbacks.onError;
 
         if (isFull) {
             return callbacks;
@@ -16,25 +15,28 @@ define([
 
         callbacks = Object.create(callbacks);
 
-        if (!callbacks.setAbort) {
-            callbacks.setAbort = abort => {};
+        if (!callbacks.abort) {
+            callbacks.abort = {
+                onAdd(abort) {},
+                onDrop(abort) {},
+            };
         }
 
-        if (!callbacks.break) {
-            callbacks.break = () => {};
+        if (!callbacks.onEmpty) {
+            callbacks.onEmpty = () => {};
         }
 
-        if (!callbacks.yield) {
-            callbacks.yield = first => {};
+        if (!callbacks.onFirst) {
+            callbacks.onFirst = first => {};
         }
         
-        if (!callbacks.continue) {
-            callbacks.continue = rest => {};
+        if (!callbacks.onRest) {
+            callbacks.onRest = rest => {};
         }
         
-        if (!callbacks.throw) {
-            callbacks.throw = error => {
-                console.error(error);    
+        if (!callbacks.onError) {
+            callbacks.onError = error => {
+                console.error(error, error.stack);    
             };
         }
 
@@ -44,9 +46,9 @@ define([
     function refine(callbacks, newCallbacks) {
         let refinedCallbacks = Object.create(callbacks);
 
-        for (let field of Object.keys(newCallbacks)) {
-            console.assert(field in refinedCallbacks, 'Can only refine existing callbacks.');
-            refinedCallbacks[field] = newCallbacks[field];    
+        for (let name of Object.keys(newCallbacks)) {
+            console.assert(name in refinedCallbacks);
+            refinedCallbacks[name] = newCallbacks[name];    
         }
 
         return refinedCallbacks;
@@ -54,9 +56,9 @@ define([
 
     function singularize(callbacks) {
         return {
-            setAbort: callbacks.setAbort.bind(callbacks),
-            return: callbacks.yield.bind(callbacks),
-            throw: callbacks.throw.bind(callbacks),
+            abort: callbacks.abort,
+            onResult: callbacks.onFirst,
+            onError: callbacks.onError,
         };
     }
 
@@ -67,18 +69,18 @@ define([
             try {
                 res = transform(...args);
             } catch (error) {
-                callbacks.throw(error);
+                callbacks.onError(error);
                 return;
             }
 
-            callbacks.return(res);
+            callbacks.onResult(res);
         };    
     }
 
     let REQUEST = Symbol('REQUEST');
 
     class AsyncStream {
-        constructor(request = callbacks => { callbacks.break(); }) {
+        constructor(request = callbacks => { callbacks.onEmpty(); }) {
             this[REQUEST] = callbacks => {
                 let queue = [callbacks];
 
@@ -88,54 +90,46 @@ define([
 
                 let rest;
                 request(refine(callbacks, {
-                    break: () => {
-                        let i = 0;
-                        while (i < queue.length) {
+                    onEmpty: () => {
+                        for (let i = 0; i < queue.length; ++i) {
                             let callbacks = queue[i];
-                            callbacks.break();
-                            ++i;
+                            callbacks.onEmpty();
                         }
                         this[REQUEST] = callbacks => {
-                            callbacks.break();
+                            callbacks.onEmpty();
                         };
                     },
 
-                    yield: first => {
-                        let i = 0;
-                        while (i < queue.length) {
+                    onFirst: (first) => {
+                        for (let i = 0; i < queue.length; ++i) {
                             let callbacks = queue[i];
-                            callbacks.yield(first);
-                            ++i;
+                            callbacks.onFirst(first);
                         }
                         this[REQUEST] = callbacks => {
-                            callbacks.continue(rest);
-                            callbacks.yield(first);
+                            callbacks.onRest(rest);
+                            callbacks.onFirst(first);
                         };
                     },
 
-                    continue: _rest => {
+                    onRest: (_rest) => {
                         rest = _rest;
-                        let i = 0;
-                        while (i < queue.length) {
+                        for (let i = 0; i < queue.length; ++i) {
                             let callbacks = queue[i];
-                            callbacks.continue(rest);
-                            ++i;
+                            callbacks.onRest(rest);
                         }
                         this[REQUEST] = callbacks => {
-                            callbacks.continue(rest);
+                            callbacks.onRest(rest);
                             queue.push(callbacks);
                         };
                     },
 
-                    throw: error => {
-                        let i = 0;
-                        while (i < queue.length) {
+                    onError: (error) => {
+                        for (let i = 0; i < queue.length; ++i) {
                             let callbacks = queue[i];
-                            callbacks.throw(error);
-                            ++i;
+                            callbacks.onError(error);
                         }
                         this[REQUEST] = callbacks => {
-                            callbacks.throw(error);
+                            callbacks.onError(error);
                         };
                     },
                 }));
@@ -146,8 +140,8 @@ define([
             this[REQUEST](ensureDefaults(callbacks));
         }
 
-        $(transform) {
-            return transform(this);
+        $(metaTransform) {
+            return metaTransform(this);
         }
        
         static from(iterator) {
@@ -161,17 +155,17 @@ define([
 
                     ({ value, done } = iterator.next());
                 } catch (error) {
-                    callbacks.throw(error);
+                    callbacks.onError(error);
                     return;
                 }
 
                 if (done) {
-                    callbacks.break();
+                    callbacks.onEmpty();
                     return;
                 }
 
-                callbacks.continue(AsyncStream.from(iterator));
-                callbacks.yield(value);    
+                callbacks.onRest(AsyncStream.from(iterator));
+                callbacks.onFirst(value);    
             });    
         }
 
@@ -181,215 +175,31 @@ define([
 
         static repeat(what) {
             return new AsyncStream(callbacks => {
-                callbacks.continue(AsyncStream.repeat(what));
-                callbacks.yield(what);
+                callbacks.onRest(AsyncStream.repeat(what));
+                callbacks.onFirst(what);
             });    
         }
 
         static count({ from = 0, to = Number.MAX_SAFE_INTEGER, by = 1 }) {
             return new AsyncStream(callbacks => {
                 if (by > 0 && from >= to || by < 0 && from <= to) {
-                    callbacks.break();
+                    callbacks.onEmpty();
                 } else {
-                    callbacks.continue(AsyncStream.count({ from: from + by, to, by }));
-                    callbacks.yield(from);
+                    callbacks.onRest(AsyncStream.count({ from: from + by, to, by }));
+                    callbacks.onFirst(from);
                 }
             });    
-        }
-
-        static zip(...streams) {
-            console.assert(streams.length >= 2, 'AsyncStream.zip requires at least two arguments.');
-            return new AsyncStream(callbacks => {
-                let aborts = new Map();
-                let superAbort = null;
-                let firstCount = 0, firsts = [];
-                let restCount = 0, rests = [];
-                for (let i = 0; i < streams.length; ++i) {
-                    streams[i].request(refine(callbacks, {
-                        setAbort(abort) {
-                            if (abort === null) {
-                                aborts.delete(i);
-                                if (aborts.size === 0) {
-                                    callbacks.setAbort(superAbort = null);
-                                }
-                            } else {
-                                aborts.set(i, abort);
-                                if (superAbort === null) {
-                                    callbacks.setAbort(superAbort = () => {
-                                        for (let abort of aborts.values()) {
-                                            abort();    
-                                        }    
-                                    });
-                                }
-                            }
-                        },
-
-                        break() {
-                            if (superAbort !== null) {
-                                superAbort();
-                            }
-                            callbacks.break();
-                        },
-
-                        yield(first) {
-                            firsts[i] = first; ++firstCount;
-                            if (firstCount === streams.length) {
-                                callbacks.yield(firsts);     
-                            }
-                        },
-
-                        continue(rest) {
-                            rests[i] = rest; ++restCount;
-                            if (restCount === streams.length) {
-                                callbacks.continue(AsyncStream.zip(...rests));     
-                            }
-                        },
-
-                        throw(error) {
-                            if (superAbort !== null) {
-                                superAbort();
-                            }
-                            callbacks.throw(error);
-                        },
-                    }));   
-                }
-            });
-        }
-
-        zip(...others) {
-            return AsyncStream.zip(this, ...others);    
-        }
-
-        static chain(first, ...rest) {
-            return first.chain(...rest);
-        }
-
-        chain(other, ...rest) {
-            if (rest.length > 0) {
-                other = other.chain(...rest);    
-            }
-
-            return new AsyncStream(callbacks => {
-                this.request(refine(callbacks, {
-                    break() {
-                        other.request(callbacks);  
-                    },
-
-                    continue(rest) {
-                        callbacks.continue(rest.chain(other));
-                    },
-                }));    
-            });
-        }
-
-        chainItems() {
-            return new AsyncStream(callbacks => {
-                let rest;
-                this.request(refine(callbacks, {
-                    yield(first) {
-                        first.chain(rest.chainItems()).request(callbacks);
-                    },
-
-                    continue(_rest) {
-                        rest = _rest;
-                    },
-                }));    
-            });
-        }
-
-        static join(...streams) {
-            if (streams.length === 0) {
-                return AsyncStream();
-            }
-
-            if (streams.length === 1) {
-                return streams[0];
-            }
-
-            return new AsyncStream(callbacks => {
-                let aborts = new Map();
-                let superAbort = null;
-                let done = false;
-                for (let stream of streams.slice()) {
-                    let rest;
-                    stream.request(refine(callbacks, {
-                        setAbort(abort) {
-                            if (abort === null) {
-                                aborts.delete(stream);
-                                if (aborts.size === 0) {
-                                    callbacks.setAbort(superAbort = null);
-                                }
-                            } else {
-                                aborts.set(stream, abort);
-                                if (superAbort === null) {
-                                    callbacks.setAbort(superAbort = () => {
-                                        for (let abort of aborts.values()) {
-                                            abort();    
-                                        }    
-                                    });
-                                }
-                            }
-                        },
-
-                        break() {
-                            streams.splice(streams.indexOf(stream), 1);
-                        },
-
-                        yield(first) {
-                            if (!done) {
-                                done = true;
-
-                                streams.splice(streams.indexOf(stream), 1);
-                                streams.push(rest);
-
-                                callbacks.continue(AsyncStream.join(...streams));
-                                callbacks.yield(first);
-                            }
-                        },
-
-                        continue(_rest) {
-                            rest = _rest;
-                        },
-
-                        throw(error) {
-                            if (superAbort !== null) {
-                                superAbort();
-                            }
-                            callbacks.throw(error);
-                        }
-                    }));   
-                }
-            });
-        }
-
-        join(...others) {
-            return AsyncStream.join(this, ...others);
-        }
-
-        joinItems() {
-            return new AsyncStream(callbacks => {
-                let rest;
-                this.request({
-                    yield(first) {
-                        first.join(rest.joinItems()).request(callbacks);
-                    },
-
-                    continue(_rest) {
-                        rest = _rest;
-                    },
-                });
-            });
         }
 
         asyncMap(transform) {
             return new AsyncStream(callbacks => {
                 this.request(refine(callbacks, {
-                    yield(first) {
+                    onFirst: (first) => {
                         transform(singularize(callbacks), first);
                     },
 
-                    continue(rest) {
-                        callbacks.continue(rest.asyncMap(transform));
+                    onRest: (rest) => {
+                        callbacks.onRest(rest.asyncMap(transform));
                     },
                 }));    
             });
@@ -398,25 +208,25 @@ define([
         map(transform) {
             return this.asyncMap(asynchronize(transform));    
         }
-        
+
         asyncFold(initial, combine) {
             return new AsyncStream(callbacks => {
                 let rest;
-                this.request(callbacks.refine({
-                    break() {
-                        callbacks.continue(new AsyncStream());
-                        callbacks.yield(initial);
+                this.request(refine(callbacks, {
+                    onEmpty: () => {
+                        callbacks.onRest(new AsyncStream());
+                        callbacks.onFirst(initial);
                     },
 
-                    yield(first) {
+                    onFirst: (first) => {
                         combine(refine(singularize(callbacks), {
-                            return(result) {
+                            onResult: (result) => {
                                 rest.asyncFold(result, combine).request(callbacks);
                             }, 
                         }), initial, first);
                     },
 
-                    continue(_rest) {
+                    onRest: (_rest) => {
                         rest = _rest;
                     },
                 }));    
@@ -431,12 +241,12 @@ define([
             return new AsyncStream(callbacks => {
                 let rest;
                 this.request(refine(callbacks, {
-                    yield(first) {
+                    onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
-                            return(pass) {
+                            onResult: (pass) => {
                                 if (pass) {
-                                    callbacks.continue(rest);
-                                    callbacks.yield(first);
+                                    callbacks.onRest(rest);
+                                    callbacks.onFirst(first);
                                 } else {
                                     rest.request(callbacks);
                                 }
@@ -444,7 +254,7 @@ define([
                         }), first);
                     },
 
-                    continue(_rest) {
+                    onRest: (_rest) => {
                         rest = _rest.asyncFilter(predicate);
                     },
                 }));    
@@ -455,107 +265,227 @@ define([
             return this.asyncFilter(asynchronize(predicate));    
         }
 
-        asyncDo(action) {
-            return this.asyncMap((callbacks, item) => {
-                action(refine(callbacks, {
-                    return() {
-                        callbacks.return(item);
+        chain(that = null) {
+            if (arguments.length === 0) {
+                return new AsyncStream(callbacks => {
+                    let rest;
+                    this.request(refine(callbacks, {
+                        onFirst: (first) => {
+                            first.chain(rest.chain()).request(callbacks);
+                        },
+
+                        onRest: (_rest) => {
+                            rest = _rest;
+                        },
+                    }));    
+                });
+            }
+
+            return new AsyncStream(callbacks => {
+                this.request(refine(callbacks, {
+                    onEmpty: () => {
+                        that.request(callbacks);  
                     },
-                }), item);   
+
+                    onRest: (rest) => {
+                        callbacks.onRest(rest.chain(that));
+                    },
+                }));    
             });
         }
 
-        do(action) {
-            return this.asyncDo(asynchronize(action));
-        }
+        join(that) {
+            if (arguments.length === 0) {
+                return new AsyncStream(callbacks => {
+                    let rest;
+                    this.request(refine(callbacks, {
+                        onFirst: (first) => {
+                            first.join(rest.join()).request(callbacks);
+                        },
 
-        ajax() {
-            return this.asyncMap((callbacks, ajaxSettings) => {
-                let aborted = false;
-
-                let jqXHR = $.ajax(ajaxSettings)
-                .always(() => {
-                    callbacks.setAbort(null);
-                })
-                .done((data, textStatus, jqXHR) => {
-                    let contentType = jqXHR.getResponseHeader('Content-Type') || '';
-                    if (contentType.startsWith('text/html') && (ajaxSettings.dataType === undefined || ajaxSettings.dataType === 'html')) {
-                        data = new DOMParser().parseFromString(data, 'text/html');
-                    }
-                    callbacks.return(data);
-                })
-                .fail((jqXHR, textStatus, errorThrown) => {
-                    if (!aborted) {
-                        callbacks.throw(errorThrown);
-                    }
+                        onRest: (_rest) => {
+                            rest = _rest;
+                        },
+                    }));    
                 });
+            }
 
-                callbacks.setAbort(() => {
-                    aborted = true;
-                    jqXHR.abort();  
-                });
+            return new AsyncStream(callbacks => {
+                let leader = null;
+                let streams = [this, that];
+                for (let i = 0; i < streams.length; ++i) {
+                    streams[i].request(refine(callbacks, {
+                        onEmpty: () => {
+                            streams[i] = null;
+                        },
+
+                        onFirst: (first) => {
+                            if (leader === i) {
+                                callbacks.onFirst(first);
+                            }
+                        },
+
+                        onRest: (rest) => {
+                            if (leader === null) {
+                                leader = i;
+                                if (streams[1 - i] !== null) {
+                                    callbacks.onRest(streams[1 - i].join(rest));
+                                } else {
+                                    callbacks.onRest(rest);
+                                }
+                            }
+                        },
+                    }));   
+                }
             });
         }
 
-        asyncBreakIf(predicate) {
+        asyncChopIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
                 this.request(refine(callbacks, {
-                    yield(first) {
+                    onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
-                            return(shouldBreak) {
-                                if (shouldBreak) {
-                                    callbacks.break();
+                            onResult: (shouldChop) => {
+                                if (shouldChop) {
+                                    callbacks.onEmpty();
                                 } else {
-                                    callbacks.continue(rest.asyncBreakIf(predicate));
-                                    callbacks.yield(first);
+                                    callbacks.onRest(rest.asyncChopIf(predicate));
+                                    callbacks.onFirst(first);
                                 }
                             }, 
                         }), first);
                     },
 
-                    continue(_rest) {
+                    onRest: (_rest) => {
                         rest = _rest;
                     },
                 }));    
             });
         }
 
-        breakIf(predicate) {
-            return this.asyncBreakIf(asynchronize(predicate));
+        chopIf(predicate) {
+            return this.asyncChopIf(asynchronize(predicate));
         }
 
-        asyncBreakNextIf(predicate) {
+        asyncChopNextIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
                 this.request(refine(callbacks, {
-                    yield(first) {
+                    onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
-                            return(shouldBreak) {
-                                if (shouldBreak) {
-                                    callbacks.continue(new AsyncStream());
+                            onResult: (shouldChop) => {
+                                if (shouldChop) {
+                                    callbacks.onRest(new AsyncStream());
                                 } else {
-                                    callbacks.continue(rest.asyncBreakNextIf(predicate));
+                                    callbacks.onRest(rest.asyncChopNextIf(predicate));
                                 }
 
-                                callbacks.yield(first);
+                                callbacks.onFirst(first);
                             }, 
                         }), first);
                     },
 
-                    continue(_rest) {
+                    onRest: (_rest) => {
                         rest = _rest;
                     },
                 }));    
             });
         }
 
-        breakNextIf(predicate) {
-            return this.asyncBreakNextIf(asynchronize(predicate));
+        chopNextIf(predicate) {
+            return this.asyncChopNextIf(asynchronize(predicate));
         }
 
-        enumerate({ from = 0 }) {
-            return AsyncStream.count({ from }).zip(this);     
+        static zip(streams) {
+            return new AsyncStream(callbacks => {
+                let keys = Object.keys(streams);
+                let firsts = new streams.constructor(), firstCount = 0;
+                let rests = new streams.constructor(), restCount = 0;
+                for (let key of keys) {
+                    streams[key].request(refine(callbacks, {
+                        onFirst(first) {
+                            firsts[key] = first; ++firstCount;
+                            if (firstCount === keys.length) {
+                                callbacks.onFirst(firsts);     
+                            }
+                        },
+
+                        onRest(rest) {
+                            rests[key] = rest; ++restCount;
+                            if (restCount === keys.length) {
+                                callbacks.onRest(AsyncStream.zip(rests));     
+                            }
+                        },
+                    }));   
+                }
+            });
+        }
+
+        pick(key) {
+            return this.map(item => item[key]);
+        }
+        
+        enumerate({ from = 0, by = 1 }) {
+            return AsyncStream.zip([AsyncStream.count({ from, by }), this]);     
+        }
+
+        httpRequest() {
+            return this.asyncMap((callbacks, settings) => {
+                if (settings.constructor === String) {
+                    settings = { uri: settings };
+                } else {
+                    settings = Object.create(settings);
+                }
+
+                if (settings.method === undefined) {
+                    settings.method = 'GET';
+                } else {
+                    settings.method = settings.method.toUpperCase();
+                }
+
+                if (settings.data === undefined) {
+                    settings.data = null;
+                } else if (settings.data.constructor === String) {
+                    if (settings.method === 'GET') {
+                        if (settings.data !== '') {
+                            settings.uri += '?' + settings.data;
+                        }
+                        settings.data = null;
+                    }
+                }
+
+                if (settings.responseType === undefined) {
+                    settings.responseType = 'document';
+                }
+
+                let xhr = new XMLHttpRequest();
+
+                let abort = () => {
+                    xhr.abort();
+                };
+
+                xhr.addEventListener('error', () => {
+                    callbacks.abort.onDrop(abort);
+                    callbacks.onResult([null, null]);
+                });
+                xhr.addEventListener('load', () => {
+                    callbacks.abort.onDrop(abort);
+                    callbacks.onResult([xhr.response, xhr.statusText]);
+                });
+
+                xhr.responseType = settings.responseType;
+
+                xhr.open(settings.method, settings.uri);
+
+                callbacks.abort.onAdd(abort);
+
+                if (settings.data === null) {
+                    xhr.send();
+                } else {
+                    xhr.send(settings.data);
+                }
+            });
         }
     }
 

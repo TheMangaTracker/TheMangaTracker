@@ -25,24 +25,30 @@ require([
 
             $scope.mangas = [];
 
-            let abort = null;
+            let aborts = new Set();
 
             let callbacks = {
-                setAbort(_abort) {
-                    abort = _abort; 
+                abort: {
+                    onAdd: (abort) => {
+                        aborts.add(abort);
+                    },
+
+                    onDrop: (abort) => {
+                        aborts.delete(abort);
+                    },
                 },
 
-                break() {
+                onEmpty() {
                     abortSearch = null;    
                 },
 
-                yield(manga) {
+                onFirst(manga) {
                     $scope.$apply(() => {
                         $scope.mangas.push(manga);    
                     });
                 },
 
-                continue(mangas) {
+                onRest(mangas) {
                     asyncCall(() => {
                         if (abortSearch !== null) {
                             mangas.request(callbacks);     
@@ -59,7 +65,7 @@ require([
             });
 
             abortSearch = () => {
-                if (abort !== null) {
+                for (let abort of aborts) {
                     abort();
                 }
             };

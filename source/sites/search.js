@@ -72,7 +72,7 @@ define([
                 require([
                     './' + site + '/search.js',
                 ], (                search    ) => {
-                    callbacks.return([site, search]);     
+                    callbacks.onResult([site, search]);     
                 });
             })
             .map(([site, search]) => {
@@ -86,7 +86,7 @@ define([
                     })
                 ;
             })
-            .joinItems()
+            .join()
         ;
     }
 
