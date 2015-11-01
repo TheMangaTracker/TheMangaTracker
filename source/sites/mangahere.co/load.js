@@ -10,11 +10,11 @@ define([
         let mangaStream = AsyncStream.of('http://' + specific.subdomain + '.mangahere.co/manga/' + name + '/').httpRequest().pick(0)
             .map(mangaDocument => {
                 let mainTitle = $(mangaDocument)
-                    .find('.manga_detail li label:contains("' + specific.summaryMarker + '")').text()
+                    .find('.manga_detail li label:contains("' + specific.summaryMarker + '")').text().trim()
                     .slice(0, -specific.summaryMarker.length).trim()
                 ;
                 let alternativeTitles = $(mangaDocument)
-                    .find('.manga_detail li:has(label:contains("' + specific.alternativeNameMarker + '"))').text()
+                    .find('.manga_detail li:has(label:contains("' + specific.alternativeNameMarker + '"))').text().trim()
                     .slice(specific.alternativeNameMarker.length).trim()
                 ;
                 alternativeTitles = (alternativeTitles === 'None') ? [] : alternativeTitles.split('; ')
@@ -26,47 +26,43 @@ define([
                         return AsyncStream.from(anchors);
                     }).chain()
                     .map(anchor => {
-                        let title = $(anchor).parent().text()
-                            .slice(titles[0].length).trim()
-                        ;
-                        let chapterStream = AsyncStream.of(anchor)
-                            .map(anchor => $(anchor).prop('href')).httpRequest().pick(0)
-                            .map(chapterDocument => {
-                                function extractPageFromDocument(pageDocument) {
-                                    return {
-                                        uri: pageDocument.URL,
-    
-                                        chapter: chapterStream,
+                        let uri = $(anchor).prop('href');
 
-                                        imageUri: $(pageDocument).find('#image').prop('src'),
-                                    };
-                                }
+                        let chapterStream = AsyncStream.of({
+                            id: specific.compressChapterId(/\/c([^\/]+)\/$/.exec(uri)[1]),
+                            uri,
 
-                                let firstPageStream = AsyncStream.of(chapterDocument)
-                                    .map(extractPageFromDocument)
-                                ;
-                                let otherPagesStream = AsyncStream.of(chapterDocument)
-                                    .map(chapterDocument => {
-                                        let options = $(chapterDocument).find('.readpage_top .go_page .right option:not([selected])').toArray();
-                                        return AsyncStream.from(options);
-                                    }).chain()
-                                    .map(option => $(option).prop('value')).httpRequest().pick(0)
-                                    .map(extractPageFromDocument)
-                                ;
-                                let pagesStream = firstPageStream.chain(otherPagesStream);
+                            manga: mangaStream,
 
-                                return {
-                                    id: specific.compressChapterId(/\/c([^\/]+)\/$/.exec(chapterDocument.URL)[1]),
-                                    uri: chapterDocument.URL,
+                            title: $(anchor).parent().text().trim().slice(titles[0].length).trim(),
 
-                                    manga: mangaStream,
-                                    
-                                    title,
+                            pages: AsyncStream.of(uri).httpRequest().pick(0)
+                                .map(chapterDocument => {
+                                    function extractPageFromDocument(pageDocument) {
+                                        return {
+                                            uri: pageDocument.URL,
+        
+                                            chapter: chapterStream,
 
-                                    pages: pagesStream,
-                                };
-                            })
-                        ;
+                                            imageUri: $(pageDocument).find('#image').prop('src'),
+                                        };
+                                    }
+
+                                    let firstPageStream = AsyncStream.of(chapterDocument)
+                                        .map(extractPageFromDocument)
+                                    ;
+                                    let otherPagesStream = AsyncStream.of(chapterDocument)
+                                        .map(chapterDocument => {
+                                            let options = $(chapterDocument).find('.readpage_top .go_page .right option:not([selected])').toArray();
+                                            return AsyncStream.from(options);
+                                        }).chain()
+                                        .map(option => $(option).prop('value')).httpRequest().pick(0)
+                                        .map(extractPageFromDocument)
+                                    ;
+                                    return firstPageStream.chain(otherPagesStream);
+                                }).chain()
+                            ,
+                        });
 
                         return chapterStream;
                     }).chain()
