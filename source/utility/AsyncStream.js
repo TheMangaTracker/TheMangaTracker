@@ -265,7 +265,7 @@ define([
             return this.asyncFilter(asynchronize(predicate));    
         }
 
-        chain(that = null) {
+        chain(that) {
             if (arguments.length === 0) {
                 return new AsyncStream(callbacks => {
                     let rest;

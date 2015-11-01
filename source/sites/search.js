@@ -1,9 +1,19 @@
 'use strict';
 
 define([
-    'require', './../sites.js', '/utility/languages.js', '/utility/AsyncStream.js',
-], ( require ,      _sites    ,           languages    ,           AsyncStream    ) => {
-    function search(query, sites = null) {
+    'require', './../sites.js', '/utility/languages.js', './load.js', '/utility/AsyncStream.js'
+], ( require ,       sites    ,           languages    ,    load    ,           AsyncStream    ) => {
+    function search(query) {
+        let querySites = query.sites;
+        if (querySites === undefined) {
+            querySites = sites;
+        } else {
+            querySites = new Set(querySites);
+            for (let site of querySites) {
+                console.assert(sites.has(site));
+            }
+        }
+
         query = (a => {
             let b = {};
 
@@ -58,35 +68,20 @@ define([
             return b;
         })(query);
 
-        if (sites === null) {
-            sites = new Set(_sites);
-        } else {
-            sites = new Set(sites);
-            for (let site of sites) {
-                console.assert(_sites.has(site));
-            }
-        }
-
-        return AsyncStream.from(sites)
+        return AsyncStream.from(querySites)
             .asyncMap((callbacks, site) => {
                 require([
-                    './' + site + '/search.js',
+                    './' + site + '/search.js'
                 ], (                search    ) => {
                     callbacks.onResult([site, search]);     
                 });
             })
             .map(([site, search]) => {
                 return search(query)
-                    .map(manga => {
-                        return {
-                            id: manga.id,
-                            title: manga.title,
-                            site,
-                        };
-                    })
+                    .map(id => load(site, id)).chain()
+                    .map(manga => ({ site, manga }))
                 ;
-            })
-            .join()
+            }).join()
         ;
     }
 

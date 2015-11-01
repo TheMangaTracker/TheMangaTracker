@@ -1,7 +1,7 @@
 'use strict';
 
 require([
-    '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'angular',
+    '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'angular'
 ], (  sites    ,         search    ,           asyncCall    ,   ng     ) => {
     let page = ng.module('page', []);
 
@@ -14,8 +14,6 @@ require([
     page.controller('page', $scope => {
         let abortSearch = null;
 
-        $scope.encode = encodeURIComponent;
-
         $scope.toggleSearch = () => {
             if (abortSearch !== null) {
                 abortSearch();    
@@ -23,7 +21,7 @@ require([
                 return;
             }
 
-            $scope.mangas = [];
+            $scope.results = [];
 
             let aborts = new Set();
 
@@ -42,16 +40,16 @@ require([
                     abortSearch = null;    
                 },
 
-                onFirst(manga) {
+                onFirst([i, result]) {
                     $scope.$apply(() => {
-                        $scope.mangas.push(manga);    
+                        $scope.results[i] = result;    
                     });
                 },
 
-                onRest(mangas) {
+                onRest(results) {
                     asyncCall(() => {
                         if (abortSearch !== null) {
-                            mangas.request(callbacks);     
+                            results.request(callbacks);     
                         }
                     });
                 },
@@ -61,7 +59,9 @@ require([
             asyncCall(() => {
                 search({
                     title: $scope.title,
-                }).request(callbacks);
+                })
+                    .enumerate({})
+                .request(callbacks);
             });
 
             abortSearch = () => {

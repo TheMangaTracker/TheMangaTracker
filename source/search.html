@@ -3,7 +3,7 @@
 <html ng-controller="page">
     <head>
         <script src="[[requireUrl]]"></script>
-        <script src="/require-config.js"></script>
+        <script src="/require_config.js"></script>
         <script src="search.js"></script>
         <title>Search - [[extensionName]]</title>
     </head>
@@ -13,8 +13,8 @@
         </div>
         <button ng-click="toggleSearch()">Search!</button>
         <ol>
-            <li ng-repeat="manga in mangas track by $index">
-                <a href="/details.html?site={{encode(manga.site)}}&manga={{encode(manga.id)}}">{{manga.title}}</a>
+            <li ng-repeat="result in results track by $index">
+                <a href="detail.html?{{result.site}}/{{result.manga.id}}">{{result.manga.titles[0]}}</a>
             </li>
         </ol>
     </body>

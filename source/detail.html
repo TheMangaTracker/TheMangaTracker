@@ -1,0 +1,25 @@
+{{=[[ ]]=}}
+<!DOCTYPE html>
+<html ng-controller="page">
+    <head>
+        <script src="[[requireUrl]]"></script>
+        <script src="/require_config.js"></script>
+        <script src="detail.js"></script>
+        <title>Details - [[extensionName]]</title>
+    </head>
+    <body>
+        <h1>{{titles[0]}}</h1>
+        <ul>
+            <li ng-repeat="title in titles.slice(1) track by $index">
+                <h3>{{title}}</h3>
+            </li>
+        </ul>
+        <h2>Chapters:</h2>
+        <ul>
+            <li ng-repeat="chapter in chapters track by $index">
+                <a href="read.html?{{site}}/{{id}}/{{chapter.id}}">{{chapter.title}}</a>
+            </li>
+        </ul>
+    </body>
+</html>
+

@@ -12,7 +12,7 @@ render('sites.js', {
     'sites': sites,
 })
 
-render('require-config.js', {
+render('require_config.js', {
     'thirdparty': [{ 'name': name, 'url': url[:-3] } for name, url in thirdparty.items() if name != 'require'],
 })
 
@@ -20,7 +20,7 @@ render('search.html', {
     'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
-render('details.html', {
+render('detail.html', {
     'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
@@ -33,7 +33,7 @@ render('manifest.json', {
         'path': '/icon.png',
         'size': get_image_size('icon.png'),
     },
-    'siteDomains': {d for s in sites for d in read_yaml(Path('sites') / s / 'domains.yaml')},
+    'siteDomains': {d for s in sites for d in [s] + read_yaml(Path('sites') / s / 'other_hosts.yaml')},
     'remoteScriptOrigins': {urlunparse(urlparse(s)[:2] + ('',) * 4) for s in thirdparty.values()},
 })
 
