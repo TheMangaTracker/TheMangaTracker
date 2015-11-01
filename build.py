@@ -24,6 +24,10 @@ render('detail.html', {
     'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
+render('read.html', {
+    'requireUrl': thirdparty['require'],
+    'extensionName': extension['name'],
+})
 
 render('manifest.json', {
     'name': extension['name'],

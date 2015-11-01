@@ -54,7 +54,7 @@ define([
                                         let firstPage = AsyncStream.of(extractPage(document));
                                         let otherPages = (() => {
                                             let options = $(document).find('.readpage_top .go_page .right option:not([selected])').toArray();
-                                            let uris = options.map(option => $(option).prop('value'));
+                                            let uris = options.map(option => specific.resolvePageListUri($(option).prop('value')));
                                             return AsyncStream.from(uris)
                                                 .httpRequest().pick(0)
                                                 .map(extractPage)
