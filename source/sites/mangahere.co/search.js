@@ -62,7 +62,7 @@ define([
         }
 
         return AsyncStream.from(Object.keys(difference))
-            .filter(language => query.languages.has(language))    
+            .passIf(language => query.languages.has(language))    
             .map(searchInLanguage).join()
         ;
     }

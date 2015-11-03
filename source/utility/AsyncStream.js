@@ -237,7 +237,7 @@ define([
             return this.asyncFold(initial, asynchronize(combine));    
         }
 
-        asyncFilter(predicate) {
+        asyncPassIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
                 this[REQUEST](refine(callbacks, {
@@ -255,14 +255,28 @@ define([
                     },
 
                     onRest: (_rest) => {
-                        rest = _rest.asyncFilter(predicate);
+                        rest = _rest.asyncPassIf(predicate);
                     },
                 }));    
             });
         }
 
-        filter(predicate) {
-            return this.asyncFilter(asynchronize(predicate));    
+        passIf(predicate) {
+            return this.asyncPassIf(asynchronize(predicate));
+        }
+
+        asyncSkipIf(predicate) {
+            return this.asyncPassIf((callbacks, item) => {
+                predicate(refine(callbacks, {
+                    onResult: (skip) => {
+                        callbacks.onResult(!skip);
+                    }
+                }), item);
+            });
+        }
+
+        skipIf(predicate) {
+            return this.asyncPassIf(asynchronize(item => !predicate(item)));
         }
 
         chain(that = null) {
