@@ -1,13 +1,13 @@
 'use strict';
 
 define([
-    './difference.js', '/utility/AsyncStream.js', 'jquery'
-], (   difference    ,           AsyncStream    ,   $     ) => {
+    './difference.js', '/utility/AsyncStream.js', '/utility/http.js', 'jquery'
+], (   difference    ,           AsyncStream    ,           http    ,   $     ) => {
     function load(id) {
         let language = id.slice(0, 2);
         let name = id.slice(3);
         let specific = difference[language];
-        let manga = AsyncStream.of('http://' + specific.subdomain + '.mangahere.co/manga/' + name + '/').httpRequest().pick(0)
+        let manga = http.get('http://' + specific.subdomain + '.mangahere.co/manga/' + name + '/')
             .map(document => {
                 let titles = (() => {
                     let main = $(document)
@@ -39,7 +39,7 @@ define([
 
                                 title,
 
-                                pages: AsyncStream.of(uri).httpRequest().pick(0)
+                                pages: http.get(uri)
                                     .map(document => {
                                         function extractPage(document) {
                                             return {
@@ -56,7 +56,7 @@ define([
                                             let options = $(document).find('.readpage_top .go_page .right option:not([selected])').toArray();
                                             let uris = options.map(option => specific.resolvePageListUri($(option).prop('value')));
                                             return AsyncStream.from(uris)
-                                                .httpRequest().pick(0)
+                                                .map(http.get).chain()
                                                 .map(extractPage)
                                             ;
                                         })();

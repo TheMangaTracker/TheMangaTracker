@@ -1,14 +1,15 @@
 'use strict';
 
 define([
-    './difference.js', '/utility/AsyncStream.js', 'jquery'
-], (   difference    ,           AsyncStream    ,   $     ) => {
+    './difference.js', '/utility/AsyncStream.js', '/utility/http.js', 'jquery'
+], (   difference    ,           AsyncStream    ,           http    ,   $     ) => {
     function search(query) {
         function searchInLanguage(language) {
             let specific = difference[language];
-            return AsyncStream.of('http://' + specific.subdomain + '.mangahere.co/advsearch.htm').httpRequest().pick(0)
+
+            return http.get('http://' + specific.subdomain + '.mangahere.co/advsearch.htm')
                 .map(document => {
-                    let form = $(document).find('#searchform');
+                    let form = $(document).find('#searchform').clone();
                     
                     if (query.title !== '') {
                         form.find('input[name="name"]').val(query.title); 
@@ -32,32 +33,23 @@ define([
                         form.find('input[name="direction"]').val(['lr']); 
                     }
 
-                    return {
-                        action: form.prop('action'),
-                        method: form.prop('method'),
-                        data: form.serialize(),
-                    };
-                })
-                .map(data => AsyncStream.repeat(data)).chain()
-                .enumerate({ from: 1 })
-                .map(([pageNo, data]) => {
-                    return {
-                        uri: data.action,
-                        method: data.method,
-                        data: data.data + '&page=' + pageNo,
-                    };
-                }).httpRequest().pick(0)
-                .chopIf(document => $(document).find('.result_search .next-page').length == 0)  // nothing found
-                .chopNextIf(document => $(document).find('.result_search .next-page .next').length == 0)  // no next page
-                .map(document => {
-                    let anchors = $(document).find('.result_search a.manga_info').toArray();
-                    return AsyncStream.from(anchors);
+                    return http.get(form.prop('action') + '?' + form.serialize());
                 }).chain()
-                .map(anchor => {
-                    let uri = $(anchor).prop('href');
-                    let name = /\/([^\/]+)\/$/.exec(uri)[1];
-                    return language + '.' + name;
-                })
+                .skipIf(document => $(document).find('.result_search .directory_footer').length === 0)  // nothing found
+                .map(function extractResults(document) {
+                    let resultsDiv = $(document).find('.result_search');
+                    let prefix = AsyncStream.from(resultsDiv.find('.manga_info').toArray().map(a => a.href))
+                        .map(uri => {
+                            let name = /\/([^\/]+)\/$/.exec(uri)[1];
+                            return language + '.' + name;
+                        })
+                    ;
+                    let suffix = AsyncStream.from(resultsDiv.find('.next').toArray().map(a => a.href))
+                        .map(http.get).chain()
+                        .map(extractResults).chain()
+                    ;
+                    return prefix.chain(suffix);
+                }).chain()
             ;
         }
 

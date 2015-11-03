@@ -443,64 +443,6 @@ define([
         enumerate({ from = 0, by = 1 }) {
             return AsyncStream.zip([AsyncStream.count({ from, by }), this]);     
         }
-
-        httpRequest() {
-            return this.asyncMap((callbacks, settings) => {
-                if (settings.constructor === String) {
-                    settings = { uri: settings };
-                } else {
-                    settings = Object.create(settings);
-                }
-
-                if (settings.method === undefined) {
-                    settings.method = 'GET';
-                } else {
-                    settings.method = settings.method.toUpperCase();
-                }
-
-                if (settings.data === undefined) {
-                    settings.data = null;
-                } else if (settings.data.constructor === String) {
-                    if (settings.method === 'GET') {
-                        if (settings.data !== '') {
-                            settings.uri += '?' + settings.data;
-                        }
-                        settings.data = null;
-                    }
-                }
-
-                if (settings.responseType === undefined) {
-                    settings.responseType = 'document';
-                }
-
-                let xhr = new XMLHttpRequest();
-
-                let abort = () => {
-                    xhr.abort();
-                };
-
-                xhr.addEventListener('error', () => {
-                    callbacks.abort.onDrop(abort);
-                    callbacks.onResult([null, null]);
-                });
-                xhr.addEventListener('load', () => {
-                    callbacks.abort.onDrop(abort);
-                    callbacks.onResult([xhr.response, xhr.statusText]);
-                });
-
-                xhr.responseType = settings.responseType;
-
-                xhr.open(settings.method, settings.uri);
-
-                callbacks.abort.onAdd(abort);
-
-                if (settings.data === null) {
-                    xhr.send();
-                } else {
-                    xhr.send(settings.data);
-                }
-            });
-        }
     }
 
     return AsyncStream;
