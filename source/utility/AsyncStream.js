@@ -40,7 +40,7 @@ define([
     }
 
     function asynchronize(transform) {
-        return function(callbacks, ...args) {
+        return (callbacks, ...args) => {
             let res;
 
             try {
