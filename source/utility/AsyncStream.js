@@ -193,7 +193,7 @@ define([
 
         asyncMap(transform) {
             return new AsyncStream(callbacks => {
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onFirst: (first) => {
                         transform(singularize(callbacks), first);
                     },
@@ -212,7 +212,7 @@ define([
         asyncFold(initial, combine) {
             return new AsyncStream(callbacks => {
                 let rest;
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onEmpty: () => {
                         callbacks.onRest(new AsyncStream());
                         callbacks.onFirst(initial);
@@ -221,7 +221,7 @@ define([
                     onFirst: (first) => {
                         combine(refine(singularize(callbacks), {
                             onResult: (result) => {
-                                rest.asyncFold(result, combine).request(callbacks);
+                                rest.asyncFold(result, combine)[REQUEST](callbacks);
                             }, 
                         }), initial, first);
                     },
@@ -240,7 +240,7 @@ define([
         asyncFilter(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
                             onResult: (pass) => {
@@ -248,7 +248,7 @@ define([
                                     callbacks.onRest(rest);
                                     callbacks.onFirst(first);
                                 } else {
-                                    rest.request(callbacks);
+                                    rest[REQUEST](callbacks);
                                 }
                             }
                         }), first);
@@ -269,9 +269,9 @@ define([
             if (arguments.length === 0) {
                 return new AsyncStream(callbacks => {
                     let rest;
-                    this.request(refine(callbacks, {
+                    this[REQUEST](refine(callbacks, {
                         onFirst: (first) => {
-                            first.chain(rest.chain()).request(callbacks);
+                            first.chain(rest.chain())[REQUEST](callbacks);
                         },
 
                         onRest: (_rest) => {
@@ -282,9 +282,9 @@ define([
             }
 
             return new AsyncStream(callbacks => {
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onEmpty: () => {
-                        that.request(callbacks);  
+                        that[REQUEST](callbacks);  
                     },
 
                     onRest: (rest) => {
@@ -298,9 +298,9 @@ define([
             if (arguments.length === 0) {
                 return new AsyncStream(callbacks => {
                     let rest;
-                    this.request(refine(callbacks, {
+                    this[REQUEST](refine(callbacks, {
                         onFirst: (first) => {
-                            first.join(rest.join()).request(callbacks);
+                            first.join(rest.join())[REQUEST](callbacks);
                         },
 
                         onRest: (_rest) => {
@@ -314,7 +314,7 @@ define([
                 let leader = null;
                 let streams = [this, that];
                 for (let i = 0; i < streams.length; ++i) {
-                    streams[i].request(refine(callbacks, {
+                    streams[i][REQUEST](refine(callbacks, {
                         onEmpty: () => {
                             streams[i] = null;
                         },
@@ -343,7 +343,7 @@ define([
         asyncChopIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
                             onResult: (shouldChop) => {
@@ -371,7 +371,7 @@ define([
         asyncChopNextIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
-                this.request(refine(callbacks, {
+                this[REQUEST](refine(callbacks, {
                     onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
                             onResult: (shouldChop) => {
@@ -403,7 +403,7 @@ define([
                 let firsts = new streams.constructor(), firstCount = 0;
                 let rests = new streams.constructor(), restCount = 0;
                 for (let key of keys) {
-                    streams[key].request(refine(callbacks, {
+                    streams[key][REQUEST](refine(callbacks, {
                         onFirst(first) {
                             firsts[key] = first; ++firstCount;
                             if (firstCount === keys.length) {
