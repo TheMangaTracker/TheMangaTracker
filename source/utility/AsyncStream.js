@@ -265,8 +265,8 @@ define([
             return this.asyncFilter(asynchronize(predicate));    
         }
 
-        chain(that) {
-            if (arguments.length === 0) {
+        chain(that = null) {
+            if (that === null) {
                 return new AsyncStream(callbacks => {
                     let rest;
                     this[REQUEST](refine(callbacks, {
@@ -294,8 +294,8 @@ define([
             });
         }
 
-        join(that) {
-            if (arguments.length === 0) {
+        join(that = null) {
+            if (that === null) {
                 return new AsyncStream(callbacks => {
                     let rest;
                     this[REQUEST](refine(callbacks, {
