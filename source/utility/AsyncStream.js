@@ -36,7 +36,7 @@ define([
         
         if (!callbacks.onError) {
             callbacks.onError = error => {
-                console.error(error, error.stack);    
+                console.error(error, error.stack);
             };
         }
 
@@ -48,7 +48,7 @@ define([
 
         for (let name of Object.keys(newCallbacks)) {
             console.assert(name in refinedCallbacks);
-            refinedCallbacks[name] = newCallbacks[name];    
+            refinedCallbacks[name] = newCallbacks[name];
         }
 
         return refinedCallbacks;
@@ -74,7 +74,7 @@ define([
             }
 
             callbacks.onResult(res);
-        };    
+        };
     }
 
     let REQUEST = Symbol('REQUEST');
@@ -165,7 +165,7 @@ define([
                 }
 
                 callbacks.onRest(AsyncStream.from(iterator));
-                callbacks.onFirst(value);    
+                callbacks.onFirst(value);
             });    
         }
 
@@ -177,7 +177,7 @@ define([
             return new AsyncStream(callbacks => {
                 callbacks.onRest(AsyncStream.repeat(what));
                 callbacks.onFirst(what);
-            });    
+            });
         }
 
         static count({ from = 0, to = Number.MAX_SAFE_INTEGER, by = 1 }) {
@@ -188,7 +188,7 @@ define([
                     callbacks.onRest(AsyncStream.count({ from: from + by, to, by }));
                     callbacks.onFirst(from);
                 }
-            });    
+            });
         }
 
         asyncMap(transform) {
@@ -201,7 +201,7 @@ define([
                     onRest: (rest) => {
                         callbacks.onRest(rest.asyncMap(transform));
                     },
-                }));    
+                }));
             });
         }
 
@@ -229,7 +229,7 @@ define([
                     onRest: (_rest) => {
                         rest = _rest;
                     },
-                }));    
+                }));
             });
         }
         
@@ -237,14 +237,14 @@ define([
             return this.asyncFold(initial, asynchronize(combine));    
         }
 
-        asyncPassIf(predicate) {
+        asyncKeepIf(predicate) {
             return new AsyncStream(callbacks => {
                 let rest;
                 this[REQUEST](refine(callbacks, {
                     onFirst: (first) => {
                         predicate(refine(singularize(callbacks), {
-                            onResult: (pass) => {
-                                if (pass) {
+                            onResult: (keep) => {
+                                if (keep) {
                                     callbacks.onRest(rest);
                                     callbacks.onFirst(first);
                                 } else {
@@ -255,18 +255,18 @@ define([
                     },
 
                     onRest: (_rest) => {
-                        rest = _rest.asyncPassIf(predicate);
+                        rest = _rest.asyncKeepIf(predicate);
                     },
-                }));    
+                }));
             });
         }
 
-        passIf(predicate) {
-            return this.asyncPassIf(asynchronize(predicate));
+        keepIf(predicate) {
+            return this.asyncKeepIf(asynchronize(predicate));
         }
 
         asyncSkipIf(predicate) {
-            return this.asyncPassIf((callbacks, item) => {
+            return this.asyncKeepIf((callbacks, item) => {
                 predicate(refine(callbacks, {
                     onResult: (skip) => {
                         callbacks.onResult(!skip);
@@ -276,7 +276,121 @@ define([
         }
 
         skipIf(predicate) {
-            return this.asyncPassIf(asynchronize(item => !predicate(item)));
+            return this.keepIf(item => !predicate(item));
+        }
+
+        take(count) {
+            if (count === 0) {
+                return new AsyncStream();
+            }
+            console.assert(count > 0);
+            return new AsyncStream(callbacks => {
+                this[REQUEST](refine(callbacks, {
+                    onRest: (rest) => {
+                        callbacks.onRest(rest.take(count - 1));
+                    },
+                }));
+            });
+        }
+
+        drop(count) {
+            if (count === 0) {
+                return this;
+            }
+            console.assert(count > 0);
+            return new AsyncStream(callbacks => {
+                this[REQUEST](refine(callbacks, {
+                    onFirst: (first) => {},
+
+                    onRest: (rest) => {
+                        rest.drop(count - 1)[REQUEST](callbacks);
+                    },
+                }));
+            });
+        }
+
+        asyncTakeWhile(predicate) {
+            return new AsyncStream(callbacks => {
+                let rest;
+                this[REQUEST](refine(callbacks, {
+                    onFirst: (first) => {
+                        predicate(refine(singularize(callbacks), {
+                            onResult: (take) => {
+                                if (take) {
+                                    callbacks.onRest(rest.asyncTakeWhile(predicate));
+                                    callbacks.onFirst(first);
+                                } else {
+                                    callbacks.onEmpty();
+                                }
+                            }
+                        }), first);
+                    },
+
+                    onRest: (_rest) => {
+                        rest = _rest;
+                    },
+                }));
+            });
+        }
+
+        takeWhile(predicate) {
+            return this.asyncTakeWhile(asynchronize(predicate));
+        }
+
+        asyncTakeUntil(predicate) {
+            return this.asyncTakeWhile((callbacks, item) => {
+                predicate(refine(callbacks, {
+                    onResult: (notTake) => {
+                        callbacks.onResult(!notTake);
+                    }
+                }), item);
+            });
+        }
+
+        takeUntil(predicate) {
+            return this.takeWhile(item => !predicate(item));
+        }
+
+        asyncDropWhile(predicate) {
+            return new AsyncStream(callbacks => {
+                let rest;
+                this[REQUEST](refine(callbacks, {
+                    onFirst: (first) => {
+                        predicate(refine(singularize(callbacks), {
+                            onResult: (drop) => {
+                                if (drop) {
+                                    rest.asyncDropWhile(predicate)[REQUEST](callbacks);
+                                } else {
+                                    callbacks.onRest(rest);
+                                    callbacks.onFirst(first);
+                                }
+                            }
+                        }), first);
+                    },
+
+                    onRest: (_rest) => {
+                        rest = _rest;
+                    },
+                }));
+            });
+        }
+
+        dropWhile(predicate) {
+            return this.asyncDropWhile(asynchronize(predicate));
+        }
+
+        asyncDropUntil(predicate) {
+            return this.asyncDropWhile((callbacks, item) => {
+                predicate(refine(callbacks, {
+                    onResult: (notDrop) => {
+                        callbacks.onResult(!notDrop);
+                    }
+                }), item);
+            });
+        }
+
+        dropUntil(predicate) {
+            return this.dropWhile(item => !predicate(item));
         }
 
         chain(that = null) {
@@ -291,7 +405,7 @@ define([
                         onRest: (_rest) => {
                             rest = _rest;
                         },
-                    }));    
+                    }));
                 });
             }
 
@@ -304,7 +418,7 @@ define([
                     onRest: (rest) => {
                         callbacks.onRest(rest.chain(that));
                     },
-                }));    
+                }));
             });
         }
 
@@ -320,7 +434,7 @@ define([
                         onRest: (_rest) => {
                             rest = _rest;
                         },
-                    }));    
+                    }));
                 });
             }
 
@@ -349,66 +463,9 @@ define([
                                 }
                             }
                         },
-                    }));   
+                    }));
                 }
             });
-        }
-
-        asyncChopIf(predicate) {
-            return new AsyncStream(callbacks => {
-                let rest;
-                this[REQUEST](refine(callbacks, {
-                    onFirst: (first) => {
-                        predicate(refine(singularize(callbacks), {
-                            onResult: (shouldChop) => {
-                                if (shouldChop) {
-                                    callbacks.onEmpty();
-                                } else {
-                                    callbacks.onRest(rest.asyncChopIf(predicate));
-                                    callbacks.onFirst(first);
-                                }
-                            }, 
-                        }), first);
-                    },
-
-                    onRest: (_rest) => {
-                        rest = _rest;
-                    },
-                }));    
-            });
-        }
-
-        chopIf(predicate) {
-            return this.asyncChopIf(asynchronize(predicate));
-        }
-
-        asyncChopNextIf(predicate) {
-            return new AsyncStream(callbacks => {
-                let rest;
-                this[REQUEST](refine(callbacks, {
-                    onFirst: (first) => {
-                        predicate(refine(singularize(callbacks), {
-                            onResult: (shouldChop) => {
-                                if (shouldChop) {
-                                    callbacks.onRest(new AsyncStream());
-                                } else {
-                                    callbacks.onRest(rest.asyncChopNextIf(predicate));
-                                }
-
-                                callbacks.onFirst(first);
-                            }, 
-                        }), first);
-                    },
-
-                    onRest: (_rest) => {
-                        rest = _rest;
-                    },
-                }));    
-            });
-        }
-
-        chopNextIf(predicate) {
-            return this.asyncChopNextIf(asynchronize(predicate));
         }
 
         static zip(streams) {
@@ -431,7 +488,7 @@ define([
                                 callbacks.onRest(AsyncStream.zip(rests));     
                             }
                         },
-                    }));   
+                    }));
                 }
             });
         }

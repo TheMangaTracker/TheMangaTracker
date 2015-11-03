@@ -21,8 +21,8 @@ define([
 
         let chapterStream = mangaStream
             .pick('chapters').chain()
-            .passIf(chapter => chapter.id === chapterId)
-            .chopNextIf(_ => true)
+            .dropWhile(chapter => chapter.id !== chapterId)
+            .take(1)
         ;
 
         return chapterStream;
