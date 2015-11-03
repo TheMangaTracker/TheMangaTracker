@@ -2,64 +2,41 @@
 
 define([
 ], () => {
-    function ensureDefaults(callbacks) {
-        let isFull = callbacks.abort
-                  && callbacks.onEmpty
-                  && callbacks.onFirst
-                  && callbacks.onRest
-                  && callbacks.onError;
+    let defaultCallbacks = {
+        abort: {
+            onAdd: (abort) => {},
+            onDrop: (abort) => {},
+        },
 
-        if (isFull) {
-            return callbacks;
-        }
+        onEmpty: () => {},
 
-        callbacks = Object.create(callbacks);
-
-        if (!callbacks.abort) {
-            callbacks.abort = {
-                onAdd(abort) {},
-                onDrop(abort) {},
-            };
-        }
-
-        if (!callbacks.onEmpty) {
-            callbacks.onEmpty = () => {};
-        }
-
-        if (!callbacks.onFirst) {
-            callbacks.onFirst = first => {};
-        }
-        
-        if (!callbacks.onRest) {
-            callbacks.onRest = rest => {};
-        }
-        
-        if (!callbacks.onError) {
-            callbacks.onError = error => {
-                console.error(error, error.stack);
-            };
-        }
-
-        return callbacks;
-    }
+        onFirst: (first) => {},
+    
+        onRest: (rest) => {},
+    
+        onError: (error) => {
+            console.error(error, error.stack);
+        },
+    };
 
     function refine(callbacks, newCallbacks) {
-        let refinedCallbacks = Object.create(callbacks);
+        let refinedCallbacks = Object.create(null);
 
-        for (let name of Object.keys(newCallbacks)) {
-            console.assert(name in refinedCallbacks);
-            refinedCallbacks[name] = newCallbacks[name];
+        for (let name in callbacks) {
+            refinedCallbacks[name] = newCallbacks[name] || callbacks[name];
         }
 
         return refinedCallbacks;
     }
 
     function singularize(callbacks) {
-        return {
-            abort: callbacks.abort,
-            onResult: callbacks.onFirst,
-            onError: callbacks.onError,
-        };
+        let singularizedCallbacks = Object.create(null);
+
+        singularizedCallbacks.abort = callbacks.abort;
+        singularizedCallbacks.onResult = callbacks.onFirst;
+        singularizedCallbacks.onError = callbacks.onError;
+        
+        return singularizedCallbacks;
     }
 
     function asynchronize(transform) {
@@ -137,7 +114,7 @@ define([
         }   
 
         request(callbacks) {
-            this[REQUEST](ensureDefaults(callbacks));
+            this[REQUEST](refine(defaultCallbacks, callbacks));
         }
 
         $(metaTransform) {
