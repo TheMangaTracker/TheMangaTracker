@@ -4,69 +4,87 @@ define([
     'require', './../sites.js', '/utility/languages.js', './load.js', '/utility/AsyncStream.js'
 ], ( require ,       sites    ,           languages    ,    load    ,           AsyncStream    ) => {
     function search(query) {
-        let querySites = query.sites;
-        if (querySites === undefined) {
-            querySites = sites;
-        } else {
-            querySites = new Set(querySites);
-            for (let site of querySites) {
-                console.assert(sites.has(site));
-            }
-        }
-
         query = (a => {
             let b = {};
-
-            if (a.title === undefined) {
-                b.title = '';
-            } else {
-                b.title = a.title;
-                console.assert(b.title.constructor === String);
+            for (name in a) {
+                b[name] = a[name];
             }
-
-            if (a.writer === undefined) {
-                b.writer = '';
+            return b;
+        })(query);
+        
+        let querySites;
+        if ('sites' in query) {
+            querySites = query.sites; delete query.sites;
+            console.assert(querySites instanceof Array);
+            if (querySites.length === 0) {
+                querySites = sites;
             } else {
-                b.writer = a.writer;
-                console.assert(b.writer.constructor === String);
+                querySites = new Set(querySites);
+                for (let site of querySites) {
+                    console.assert(sites.has(site));
+                }
             }
+        } else {
+            querySites = sites;
+        }
 
-            if (a.artist === undefined) {
-                b.artist = '';
-            } else {
-                b.artist = a.artist;
-                console.assert(b.artist.constructor === String);
-            }
+        let unknownFields = new Set(Object.keys(query));
 
-            if (a.complete === undefined) {
-                b.complete = null;    
-            } else {
-                b.complete = a.complete;
-                console.assert(b.complete === false ||
-                               b.complete === true ||
-                               b.complete === null);
-            }
+        if ('title' in query) {
+            console.assert(query.title instanceof String);
+            unknownFields.delete('title');
+        } else {
+            query.title = '';
+        }
 
-            if (a.readingDirection === undefined) {
-                b.readingDirection = null;    
-            } else {
-                b.readingDirection = a.readingDirection;    
-                console.assert(b.readingDirection === '<' ||
-                               b.readingDirection === '>' ||
-                               b.readingDirection === null);
-            }
+        if ('writer' in query) {
+            console.assert(query.writer instanceof String);
+            unknownFields.delete('writer');
+        } else {
+            query.writer = '';
+        }
 
-            if (a.languages === undefined) {
-                b.languages = new Set(languages.keys());
+        if ('artist' in query) {
+            console.assert(query.artist instanceof String);
+            unknownFields.delete('artist');
+        } else {
+            query.artist = '';
+        }
+
+        if ('status' in query) {
+            console.assert(query.status === '' ||
+                           query.status === 'ongoing' ||
+                           query.status === 'complete');
+            unknownFields.delete('status');
+        } else {
+            query.status = '';
+        }
+
+        if ('layout' in query) {
+            console.assert(query.layout === '' ||
+                           query.layout === 'right_to_left' ||
+                           query.layout === 'left_to_right');
+            unknownFields.delete('layout');
+        } else {
+            query.layout = '';
+        }
+
+        if ('languages' in query) {
+            console.assert(query.languages instanceof Array);
+            if (query.languages.length === 0) {
+                query.languages = languages;
             } else {
-                b.languages = new Set(a.languages);
-                for (let language of b.languages) {
+                query.languages = new Set(query.languages);
+                for (let language of query.languages) {
                     console.assert(languages.has(language));
                 }
             }
+            unknownFields.delete('languages');
+        } else {
+            query.languages = languages;
+        }
 
-            return b;
-        })(query);
+        console.assert(unknownFields.size === 0);
 
         return AsyncStream.from(querySites)
             .asyncMap((callbacks, site) => {

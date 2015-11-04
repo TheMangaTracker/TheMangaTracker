@@ -11,25 +11,19 @@ define([
                 .map(document => {
                     let form = $(document).find('#searchform').clone();
                     
-                    if (query.title !== '') {
-                        form.find('input[name="name"]').val(query.title); 
-                    }
+                    form.find('input[name="name"]').val(query.title); 
+                    form.find('input[name="author"]').val(query.writer); 
+                    form.find('input[name="artist"]').val(query.artist); 
 
-                    if (query.writer !== '') {
-                        form.find('input[name="author"]').val(query.writer); 
-                    }
+                    if (query.status === 'ongoing') {
+                        form.find('input[name="is_completed"]').val([0]);
+                    } else if (query.status === 'complete') {
+                        form.find('input[name="is_completed"]').val([1]);
+                    } 
 
-                    if (query.artist !== '') {
-                        form.find('input[name="artist"]').val(query.artist); 
-                    }
-
-                    if (query.complete !== null) {
-                        form.find('input[name="is_completed"]').val([query.complete ? 1 : 0]);
-                    }
-
-                    if (query.readingDirection === '<') {
+                    if (query.layout === 'right_to_left') {
                         form.find('input[name="direction"]').val(['rl']); 
-                    } else if (query.readingDirection === '>') {
+                    } else if (query.layout === 'left_to_right') {
                         form.find('input[name="direction"]').val(['lr']); 
                     }
 
