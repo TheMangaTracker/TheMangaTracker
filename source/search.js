@@ -1,75 +1,108 @@
 'use strict';
 
 require([
-    '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'angular'
-], (  sites    ,         search    ,           asyncCall    ,   ng     ) => {
+    '/utility/languages.js', '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'jquery', 'angular'
+], (          languages    ,   sites    ,         search    ,           asyncCall    ,   $     ,   ng     ) => {
+    function parseQueryString(string) {
+        let query = {};
+        for (let pair of (string === '') ? [] : string.split('&')) {
+            let [name, value] = pair.split('=');
+
+            if (value === '') {
+                continue;
+            }
+
+            name = decodeURIComponent(name);
+
+            switch (name) {
+              case 'sites':
+              case 'languages':
+                value = value.split(',').map(decodeURIComponent);
+                break;
+              default:
+                value = decodeURIComponent(value);
+            }
+
+            query[name] = value;
+        }
+        return query;
+    }
+
+    function buildQueryString(query) {
+        let pairs = [];
+        for (let name in query) {
+            let value = query[name];
+            
+            switch (name) {
+              case 'sites':
+              case 'languages':
+                value = value.map(encodeURIComponent).join(',');
+                break;
+              default:
+                value = encodeURIComponent(value);
+            }
+
+            if (value === '') {
+                continue;
+            }
+
+            name = encodeURIComponent(name);
+            pairs.push(name + '=' + value);
+        }
+        return pairs.join('&');
+    }
+
     let page = ng.module('page', []);
 
     page.config([
         '$compileProvider',
        ( $compileProvider ) => {
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
-    }])
+    }]);
+
+    page.run([
+        '$rootScope',
+       ( $rootScope ) => {
+        $rootScope.sites = [...sites];
+        $rootScope.languages = [...languages].map(([id, name]) => ({ id, name }));
+
+        $rootScope.buildQueryString = buildQueryString;
+    }]);
 
     page.controller('page', $scope => {
-        let abortSearch = null;
+        $scope.query = parseQueryString(location.search.slice(1));
+        $scope.results = [];
 
-        $scope.toggleSearch = () => {
-            if (abortSearch !== null) {
-                abortSearch();    
-                abortSearch = null;
-                return;
-            }
+        let results = search($scope.query).enumerate({});
 
-            $scope.results = [];
-
-            let aborts = new Set();
-
-            let callbacks = {
-                abort: {
-                    onAdd: (abort) => {
-                        aborts.add(abort);
-                    },
-
-                    onDrop: (abort) => {
-                        aborts.delete(abort);
-                    },
-                },
-
-                onEmpty() {
-                    abortSearch = null;    
-                },
-
+        function loadMore() {
+            results.request({
                 onFirst([i, result]) {
                     $scope.$apply(() => {
                         $scope.results[i] = result;    
                     });
                 },
 
-                onRest(results) {
-                    asyncCall(() => {
-                        if (abortSearch !== null) {
-                            results.request(callbacks);     
-                        }
-                    });
+                onRest(_results) {
+                    results = _results;
+                    loadMoreIfNeeded();
                 },
-
-            };    
-
-            asyncCall(() => {
-                search({
-                    title: $scope.title,
-                })
-                    .enumerate({})
-                .request(callbacks);
             });
+        }
 
-            abortSearch = () => {
-                for (let abort of aborts) {
-                    abort();
-                }
-            };
-        };
+        function loadMoreIfNeeded() {
+            if ($(window).scrollTop() + $(window).height() >= $('#bottom').offset().top) {
+                asyncCall(() => {
+                    loadMore();
+                });
+            }
+        }
+
+        $(window).scroll(() => {
+            loadMoreIfNeeded();
+        });
+
+        loadMoreIfNeeded();
     });
 
     ng.element(document).ready(() => {
