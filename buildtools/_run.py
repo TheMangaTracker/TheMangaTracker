@@ -35,7 +35,7 @@ elif system == 'Darwin':
         },
         'google-chrome': {
             'data_dir': expanduser('~/Library/Application Support/Google/Chrome'),
-            'executable': expanduser('/Applications/Chromium.app/Contents/MacOS/Google Chrome',)
+            'executable': '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         }
     }
 else:
