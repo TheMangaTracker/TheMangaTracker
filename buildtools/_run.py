@@ -18,8 +18,25 @@ system = platform.system()
 
 if system == 'Linux':
     browsers = {
-        'chromium': expanduser('~/.config/chromium'),
-        'google-chrome': expanduser('~/.config/google-chrome'),
+        'chromium': {
+            'data_dir': expanduser('~/.config/chromium'),
+            'executable': 'chromium',
+        },
+        'google-chrome': {
+            'data_dir': expanduser('~/.config/google/chrome'),
+            'executable': 'google-chrome',
+        },
+    }
+elif system == 'Darwin':
+    browsers = {
+        'chromium': {
+            'data_dir': expanduser('~/Library/Application Support/Chromium'),
+            'executable': '/Applications/Chromium.app/Contents/MacOS/Chromium',
+        },
+        'google-chrome': {
+            'data_dir': expanduser('~/Library/Application Support/Google/Chrome'),
+            'executable': expanduser('/Applications/Chromium.app/Contents/MacOS/Google Chrome',)
+        }
     }
 else:
     raise Exception('Unknown system \'{}\''.format(system))
@@ -38,10 +55,10 @@ def run(args):
 
     user_data_dir = Path(mkdtemp())
     try:
-        copy(user_data_dir / 'First Run', Path(browsers[browser]) / 'First Run')
-       
+        copy(user_data_dir / 'First Run', Path(browsers[browser]['data_dir']) / 'First Run')
+
         subprocess.call([
-            browser,
+            browsers[browser]['executable'],
             '--user-data-dir=' + str(user_data_dir),
             '--no-first-run',
             '--load-extension=.',
