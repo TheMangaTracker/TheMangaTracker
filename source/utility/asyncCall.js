@@ -1,7 +1,6 @@
 'use strict';
 
-define([
-], () => {
+modules.define(async (require) => {
     let tag = 'asyncCall';
 
     let nextUnusedId = 0;

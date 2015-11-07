@@ -1,7 +1,6 @@
 'use strict';
 
-define([
-], () => {
+modules.define(async (require) => {
     return {
         ['en']: {
             subdomain: 'www',

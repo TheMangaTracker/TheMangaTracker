@@ -1,8 +1,12 @@
 'use strict';
 
-define([
-    'require', './../sites.js', '/utility/languages.js', './load.js', '/utility/AsyncStream.js'
-], ( require ,       sites    ,           languages    ,    load    ,           AsyncStream    ) => {
+modules.define(async (require) => {
+    let AsyncStream = await require('/utility/AsyncStream.js');
+    let languages = await require('/utility/languages.js');
+
+    let sites = await require('../sites.js');
+    let load = await require('load.js');
+
     function search(query) {
         query = (a => {
             let b = {};
@@ -88,9 +92,7 @@ define([
 
         return AsyncStream.from(querySites)
             .asyncMap((callbacks, site) => {
-                require([
-                    './' + site + '/search.js'
-                ], (                search    ) => {
+                require(site + '/search.js').then(search => {
                     callbacks.onResult([site, search]);     
                 });
             })

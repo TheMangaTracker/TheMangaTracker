@@ -1,8 +1,15 @@
 'use strict';
 
-require([
-    '/utility/languages.js', '/sites.js', '/sites/search.js', '/utility/asyncCall.js', 'jquery', 'angular'
-], (          languages    ,   sites    ,         search    ,           asyncCall    ,   $     ,   ng     ) => {
+modules.define(async (require) => {
+    let $ = await require('jQuery');
+    let ng = await require('angular');
+
+    let asyncCall = await require('/utility/asyncCall.js');
+    let languages = await require('/utility/languages.js');
+
+    let sites = await require('/sites.js');
+    let search = await require('/sites/search.js');
+
     function parseQueryString(string) {
         let query = {};
         for (let pair of (string === '') ? [] : string.split('&')) {

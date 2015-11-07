@@ -1,7 +1,6 @@
 'use strict';
 
-define([
-], () => {
+modules.define(async (require) => {
     function parseUri(uri) {
         let a = document.createElement('a');
         a.href = uri;

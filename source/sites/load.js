@@ -1,14 +1,12 @@
 'use strict';
 
-define([
-    'require', '/utility/AsyncStream.js'
-], ( require ,           AsyncStream    ) => {
+modules.define(async (require) => {
+    let AsyncStream = await require('/utility/AsyncStream.js');
+
     function load(site, id, chapterId) {
         let mangaStream = AsyncStream.of(site)
             .asyncMap((callbacks, site) => {
-                require([
-                    './' + site + '/load.js',
-                ], (                load    ) => {
+                require(site + '/load.js').then(load => {
                     callbacks.onResult(load);     
                 });
             })

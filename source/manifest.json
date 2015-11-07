@@ -15,8 +15,6 @@
         "storage"
     ],
 
-    "content_security_policy": "script-src 'self'{{#remoteScriptOrigins}} {{{.}}}{{/remoteScriptOrigins}}; object-src 'self'",
-
     "background": {
         "persistent": false,
         "scripts": [

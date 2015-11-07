@@ -1,8 +1,13 @@
 'use strict';
 
-define([
-    './languageSpecifics.js', '/utility/AsyncStream.js', '/utility/http.js', 'jquery'
-], (   languageSpecifics    ,           AsyncStream    ,           http    ,   $     ) => {
+modules.define(async (require) => {
+    let $ = await require('jQuery');
+
+    let AsyncStream = await require('/utility/AsyncStream.js');
+    let http = await require('/utility/http.js');
+
+    let languageSpecifics = await require('languageSpecifics.js');
+
     function load(id) {
         let language = id.slice(0, id.indexOf('.'));
         let name = id.slice(language.length + 1);

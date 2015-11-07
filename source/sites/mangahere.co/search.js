@@ -1,8 +1,13 @@
 'use strict';
 
-define([
-    './languageSpecifics.js', '/utility/AsyncStream.js', '/utility/http.js', 'jquery'
-], (   languageSpecifics    ,           AsyncStream    ,           http    ,   $     ) => {
+modules.define(async (require) => {
+    let $ = await require('jQuery');
+
+    let AsyncStream = await require('/utility/AsyncStream.js');
+    let http = await require('/utility/http.js');
+
+    let languageSpecifics = await require('languageSpecifics.js');
+
     function search(query) {
         function searchInLanguage(language) {
             let languageSpecific = languageSpecifics[language];

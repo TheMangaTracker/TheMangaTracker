@@ -12,7 +12,14 @@ def transpile(target, *sources):
 
     result = subprocess.call(['babel',
         '--no-non-standard',
-        '--whitelist', 'strict,es6.arrowFunctions,es6.classes,es6.destructuring,es6.parameters,es6.spread,es6.objectSuper,es6.templateLiterals',
+        '--whitelist', 'strict,'
+                       'es6.arrowFunctions,'
+                       'es6.classes,'
+                       'es6.destructuring,'
+                       'es6.objectSuper,'
+                       'es6.parameters,'
+                       'es6.spread,'
+                       'es7.asyncFunctions,asyncToGenerator',
         '-o', str(target),
     ] + list(map(str, sources)))
     

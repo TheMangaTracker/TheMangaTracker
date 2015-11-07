@@ -1,8 +1,12 @@
 'use strict';
 
-require([
-    '/sites/load.js', '/utility/asyncCall.js', 'angular'
-], (        load    ,           asyncCall    ,   ng     ) => {
+modules.define(async (require) => {
+    let ng = await require('angular');
+
+    let asyncCall = await require('/utility/asyncCall.js');
+
+    let load = await require('/sites/load.js');
+
     let page = ng.module('page', []);
 
     page.config([

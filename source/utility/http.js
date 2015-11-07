@@ -1,8 +1,8 @@
 'use strict';
 
-define([
-    '/utility/AsyncStream.js'
-], (          AsyncStream    ) => {
+modules.define(async (require) => {
+    let AsyncStream = await require('/utility/AsyncStream.js');
+
     return {
         get(uri) {
             return AsyncStream.of(uri)

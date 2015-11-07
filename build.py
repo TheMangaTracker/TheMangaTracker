@@ -5,27 +5,19 @@ from urllib.parse import urlparse, urlunparse
 from buildtools import *
 
 sites = {s.name for s in glob('sites/*') if s.is_dir()}
-thirdparty = read_yaml('thirdparty.yaml')
 extension = read_yaml('extension.yaml')
 
 render('sites.js', {
     'sites': sites,
 })
 
-render('require_config.js', {
-    'thirdparty': [{ 'name': name, 'url': url[:-3] } for name, url in thirdparty.items() if name != 'require'],
-})
-
 render('search.html', {
-    'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
 render('detail.html', {
-    'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
 render('read.html', {
-    'requireUrl': thirdparty['require'],
     'extensionName': extension['name'],
 })
 
@@ -38,11 +30,13 @@ render('manifest.json', {
         'size': get_image_size('icon.png'),
     },
     'siteDomains': {d for s in sites for d in [s] + read_yaml(Path('sites') / s / 'other_hosts.yaml')},
-    'remoteScriptOrigins': {urlunparse(urlparse(s)[:2] + ('',) * 4) for s in thirdparty.values()},
 })
 
 for p in glob('**/*.js'):
     transpile(p)
+
+for name, url in read_yaml('thirdparty.yaml').items():
+    download(Path('thirdparty') / name, url)
 
 for p in glob('**/*.yaml'):
     remove(p)
