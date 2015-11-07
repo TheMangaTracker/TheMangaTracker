@@ -6,7 +6,7 @@ define([
     function search(query) {
         query = (a => {
             let b = {};
-            for (name in a) {
+            for (let name in a) {
                 b[name] = a[name];
             }
             return b;
