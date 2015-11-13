@@ -1,11 +1,10 @@
 'use strict';
 
 modules.define(async (require) => {
+    let $ = await require('jQuery');
     let ng = await require('angular');
 
-    let asyncCall = await require('/utility/asyncCall.js');
-
-    let load = await require('/sites/load.js');
+    let getSiteById = await require('/core/getSiteById.js');
 
     let page = ng.module('page', []);
 
@@ -16,34 +15,31 @@ modules.define(async (require) => {
     }])
 
     page.controller('page', $scope => {
-        let [site, mangaId, id] = location.search.slice(1).split('/');
+        let [siteId, mangaId, chapterId] = location.search.slice(1).split('/');
+        let pageId = location.hash.slice(1) || null;
         
-        $scope.site = site;
-        $scope.mangaId = mangaId;
-        $scope.id = id;
-        $scope.pages = [];
-        load(site, mangaId, id).request({
-            onFirst: (chapter) => {
-                $scope.$apply(() => {
-                    $scope.title = chapter.title;
-                });
-                let pagesCallbacks = {
-                    onFirst: ([i, page]) => {
-                        $scope.$apply(() => {
-                            $scope.pages[i] = page;
-                        });
-                    },
-                    onRest: (pages) => {
-                        asyncCall(() => {
-                            pages.request(pagesCallbacks);
-                        })
-                    },
+        (async () => {
+            let site = await getSiteById(siteId);
+            let manga = await site.getMangaById(mangaId);
+            let chapter = await manga.getChapterById(chapterId);
+            let _chapter = {
+                title: await chapter.getTitle(),
+                pages: [],
+            };
+            $scope.$apply(() => {
+                $scope.chapter = _chapter;
+            });
+            for (let page = await chapter.getFirstPage(), i = 0; page !== null; page = await page.getNextPage(), ++i) {
+                let j = i;
+                let _page = {
+                    id: await page.getId(),
+                    imageUri: await page.getImageUri(),
                 };
-                chapter.pages
-                    .enumerate({})
-                .request(pagesCallbacks);
+                $scope.$apply(() => {
+                    _chapter.pages[j] = _page;
+                });
             }
-        }); 
+        })();
     });
 
     ng.element(document).ready(() => {

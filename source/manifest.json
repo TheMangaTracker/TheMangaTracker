@@ -8,9 +8,9 @@
     "icons": { "{{{icon.size}}}": "{{{icon.path}}}" },
 
     "permissions": [
-        {{#siteDomains}}
+        {{#hosts}}
             "*://*.{{{.}}}/*",
-        {{/siteDomains}}
+        {{/hosts}}
 
         "storage"
     ],
@@ -18,7 +18,7 @@
     "background": {
         "persistent": false,
         "scripts": [
-            "core.js"
+            "background.js"
         ]
     },
 

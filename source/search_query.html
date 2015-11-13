@@ -4,7 +4,7 @@
   <head>
     <script src="/utility/modules.js"></script>
     <script src="/modules_setup.js"></script>
-    <script src="search.js"></script>
+    <script src="search_query.js"></script>
     <title>Search - [[extensionName]]</title>
   </head>
   <body>
@@ -50,7 +50,7 @@
       <tr>
         <td style="text-align:right">Languages:</td>
         <td>
-          <select multiple style="resize:vertical" ng-model="query.languages">
+          <select multiple style="resize:vertical" ng-model="query.languageIds">
               <option ng-repeat="language in languages" value="{{language.id}}">{{language.name}}</option>
           </select>
         </td>
@@ -58,8 +58,8 @@
       <tr>
         <td style="text-align:right">Sites:</td>
         <td>
-          <select multiple style="resize:vertical" ng-model="query.sites">
-              <option ng-repeat="site in sites" value="{{site}}">{{site}}</option>
+          <select multiple style="resize:vertical" ng-model="query.siteIds">
+              <option ng-repeat="site in sites" value="{{site.id}}">{{site.name}}</option>
           </select>
         </td>
       </tr>
@@ -67,22 +67,12 @@
       <tr>
         <td></td>
         <td style="text-align:right">
-          <a href="?{{buildQueryString(query)}}">
+          <a href="/search_results.html{{buildQueryString(query)}}">
             <button>Search!</button>
           </a>
         </td>
       </tr>
     </table>
-
-    <hr></hr>
-
-    <ol>
-      <li ng-repeat="result in results track by $index">
-        <a href="detail.html?{{result.site}}/{{result.manga.id}}">{{result.manga.titles[0]}}</a>
-      </li>
-    </ol>
-
-    <div id="bottom"></div>
   </body>
 </html>
 

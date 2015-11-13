@@ -3,9 +3,7 @@
 modules.define(async (require) => {
     let ng = await require('angular');
 
-    let asyncCall = await require('/utility/asyncCall.js');
-
-    let load = await require('/sites/load.js');
+    let getSiteById = await require('/core/getSiteById.js');
 
     let page = ng.module('page', []);
 
@@ -16,34 +14,33 @@ modules.define(async (require) => {
     }])
 
     page.controller('page', $scope => {
-        let [site, id] = location.search.slice(1).split('/');
-        
-        $scope.site = site;
-        $scope.id = id;
-        $scope.titles = [];
-        $scope.chapters = [];
-        load(site, id).request({
-            onFirst: (manga) => {
-                $scope.$apply(() => {
-                    $scope.titles = manga.titles;
-                });
-                let chaptersCallbacks = {
-                    onFirst: ([i, chapter]) => {
-                        $scope.$apply(() => {
-                            $scope.chapters[i] = chapter;
-                        });
-                    },
-                    onRest: (chapters) => {
-                        asyncCall(() => {
-                            chapters.request(chaptersCallbacks);
-                        })
-                    },
+        let [siteId, mangaId] = location.search.slice(1).split('/');
+       
+        (async () => {
+            let site = await getSiteById(siteId);
+            let manga = await site.getMangaById(mangaId);
+
+            let _manga = {
+                site: { id: await site.getId() },
+                id: await manga.getId(),
+                title: await manga.getTitle(),
+                alternativeTitles: await manga.getAlternativeTitles(),
+                chapters: [],
+            };
+            $scope.$apply(() => {
+                $scope.manga = _manga;
+            });
+            for (let chapter = await manga.getLastChapter(), i = 0; chapter !== null; chapter = await chapter.getPreviousChapter(), ++i) {
+                let j = i;
+                let _chapter = {
+                    id: await chapter.getId(),
+                    title: await chapter.getTitle(),
                 };
-                manga.chapters
-                    .enumerate({})
-                .request(chaptersCallbacks);
+                $scope.$apply(() => {
+                    _manga.chapters[j] = _chapter;
+                });
             }
-        }); 
+        })();
     });
 
     ng.element(document).ready(() => {

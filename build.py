@@ -4,14 +4,17 @@
 from urllib.parse import urlparse, urlunparse
 from buildtools import *
 
-sites = {s.name for s in glob('sites/*') if s.is_dir()}
+siteIds = {s.parent.name for s in glob('core/sites/*/site.js')}
 extension = read_yaml('extension.yaml')
 
-render('sites.js', {
-    'sites': sites,
+render('core/siteIds.js', {
+    'siteIds': siteIds,
 })
 
-render('search.html', {
+render('search_query.html', {
+    'extensionName': extension['name'],
+})
+render('search_results.html', {
     'extensionName': extension['name'],
 })
 render('detail.html', {
@@ -29,7 +32,7 @@ render('manifest.json', {
         'path': '/icon.png',
         'size': get_image_size('icon.png'),
     },
-    'siteDomains': {d for s in sites for d in [s] + read_yaml(Path('sites') / s / 'other_hosts.yaml')},
+    'hosts': {h for sid in siteIds for h in read_yaml(Path('core/sites') / sid / 'hosts.yaml')},
 })
 
 for p in glob('**/*.js'):

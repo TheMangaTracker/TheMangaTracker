@@ -1,11 +1,10 @@
 'use strict';
 
 modules.define(async (require) => {
-    let sites = new Set([
-        {{#sites}}
+    return new Set([
+        {{#siteIds}}
             '{{{.}}}',
-        {{/sites}}
+        {{/siteIds}}
     ]);
-
-    return sites;
 });
+

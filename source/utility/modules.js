@@ -69,6 +69,8 @@ var modules = (() => {
             return getModule(dependencyUrl);
         }
 
+        require.baseUri = new URL('.', url).href;
+
         setModule(url, initialize(require));
     }
 

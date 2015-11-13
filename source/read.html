@@ -8,10 +8,12 @@
         <title>Read - [[extensionName]]</title>
     </head>
     <body>
-        <h1>{{title}}</h1>
-        <div ng-repeat="page in pages track by $index">
-            <img src="{{page.imageUri}}">{{$index}}</img>
+        <h1>{{chapter.title}}</h1>
+        <div id="top"></div>
+        <div ng-repeat="page in chapter.pages track by page.id">
+            <img id="{{page.id}}" ng-src="{{page.imageUri}}">{{page.id}}</img>
         </div>
+        <div id="bottom"></div>
     </body>
 </html>
 
