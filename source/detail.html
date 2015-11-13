@@ -1,25 +1,67 @@
 {{=[[ ]]=}}
 <!DOCTYPE html>
 <html ng-controller="page">
-    <head>
-        <script src="/utility/modules.js"></script>
-        <script src="/modules_setup.js"></script>
-        <script src="detail.js"></script>
-        <title>Details - [[extensionName]]</title>
-    </head>
-    <body>
+  <head>
+    <script src="/utility/modules.js"></script>
+    <script src="/modules_setup.js"></script>
+    <script src="detail.js"></script>
+    <title>Details - [[extensionName]]</title>
+  </head>
+  <body ng-if="manga !== null">
+
+    <div ng-if="manga.coverImageUri !== null">
+      <img ng-src="{{manga.coverImageUri}}"></img>
+    </div>
+
+    <div ng-if="manga.uri !== null">
+      <a href="{{manga.uri}}">
         <h1>{{manga.title}}</h1>
-        <ul>
-            <li ng-repeat="title in manga.alternativeTitles track by $index">
-                <h3>{{title}}</h3>
-            </li>
-        </ul>
-        <h2>Chapters:</h2>
-        <ul>
-            <li ng-repeat="chapter in manga.chapters track by $index">
-                <a href="read.html?{{manga.site.id}}/{{manga.id}}/{{chapter.id}}">{{chapter.title}}</a>
-            </li>
-        </ul>
-    </body>
+      </a>
+    </div>
+    <div ng-if="manga.uri === null">
+      <h1>{{manga.title}}</h1>
+    </div>
+
+    <div ng-if="manga.alternativeTitles.length > 0">
+      <h3>Alternative title(s):</h3>
+      <ul>
+        <li ng-repeat="title in manga.alternativeTitles">{{title}}</li>
+      </ul>
+    </div>
+
+    <div ng-if="manga.language !== null">
+      <h3>Language:</h3>
+      <p>{{manga.language}}</p>
+    </div>
+
+    <div ng-if="manga.writers.length > 0">
+      <h3>Writer(s):</h3>
+      <ul>
+        <li ng-repeat="writer in manga.writers">{{writer}}</li>
+      </ul>
+    </div>
+
+    <div ng-if="manga.artists.length > 0">
+      <h3>Artist(s):</h3>
+      <ul>
+        <li ng-repeat="artist in manga.artists">{{artist}}</li>
+      </ul>
+    </div>
+
+    <div ng-if="manga.summaryParagraphs.length > 0">
+      <h3>Summary:</h3>
+      <p ng-repeat="summaryParagraph in manga.summaryParagraphs">{{summaryParagraph}}</p>
+    </div>
+
+    <div ng-if="manga.chapters.length > 0">
+      <h3>Chapters:</h3>
+      <ul>
+        <li ng-repeat="chapter in manga.chapters track by $index">
+          <a href="read.html?{{manga.site.id}}/{{manga.id}}/{{chapter.id}}">{{chapter.title}}</a>
+        </li>
+      </ul>
+    </div>
+
+  </body>
 </html>
 

@@ -3,6 +3,7 @@
 modules.define(async (require) => {
     let ng = await require('angular');
 
+
     let getSiteById = await require('/core/getSiteById.js');
 
     let page = ng.module('page', []);
@@ -16,6 +17,7 @@ modules.define(async (require) => {
     page.controller('page', $scope => {
         let [siteId, mangaId] = location.search.slice(1).split('/');
        
+        $scope.manga = null;
         (async () => {
             let site = await getSiteById(siteId);
             let manga = await site.getMangaById(mangaId);
@@ -23,8 +25,14 @@ modules.define(async (require) => {
             let _manga = {
                 site: { id: await site.getId() },
                 id: await manga.getId(),
+                uri: await manga.getUri(),
                 title: await manga.getTitle(),
                 alternativeTitles: await manga.getAlternativeTitles(),
+                coverImageUri: await manga.getCoverImageUri(),
+                language: await manga.getLanguage(),
+                writers: await manga.getWriters(),
+                artists: await manga.getArtists(),
+                summaryParagraphs: await manga.getSummaryParagraphs(),
                 chapters: [],
             };
             $scope.$apply(() => {

@@ -9,14 +9,24 @@ modules.define(async (require) => {
     let ChapterBase = await require('/core/ChapterBase.js');
     let MangaBase = await require('/core/MangaBase.js');
 
+    let alternativeNameMarker = {
+        ['en']: 'Alternative Name:',
+        ['es']: 'Nombre Alternativo:',
+    };
+
+    let authorMarker = {
+        ['en']: 'Author(s):',
+        ['es']: 'Autor(s):',
+    };
+
+    let artistMarker = {
+        ['en']: 'Artist(s):',
+        ['es']: null,  // does not exist, try english version
+    };
+
     let summaryMarker = {
         ['en']: 'Manga Summary:',
         ['es']: 'Manga Resumen:',
-    };
-
-    let alternativeTitlesMarker = {
-        ['en']: 'Alternative Name:',
-        ['es']: 'Nombre Alternativo:',
     };
     
     let compressChapterId = {
@@ -219,14 +229,23 @@ modules.define(async (require) => {
         getAlternativeTitles() {
             let languageId = this.getLanguageId();
             let alternativeTitles = $(this.document)
-                .find('.manga_detail li:has(label:contains("' + alternativeTitlesMarker[languageId] + '"))')
+                .find('.manga_detail li:has(label:contains("' + alternativeNameMarker[languageId] + '"))')
                 .text()
                 .trim()
-                .slice(alternativeTitlesMarker[languageId].length)
+                .slice(alternativeNameMarker[languageId].length)
                 .trim()
             ;
             alternativeTitles = (alternativeTitles === 'None') ? [] : alternativeTitles.split('; ')
             return alternativeTitles;
+        }
+
+        getCoverImageUri() {
+            let coverImageUri = $(this.document)
+                .find('.manga_detail_top .img')
+                .attr('src')
+            ;
+            coverImageUri = new URL(coverImageUri, this.getUri()).href;
+            return coverImageUri;
         }
 
         getLanguageId() {
@@ -235,6 +254,53 @@ modules.define(async (require) => {
                 return 'en';
             }
             return subdomain;
+        }
+
+        getWriters() {
+            let languageId = this.getLanguageId();
+            let anchors = $(this.document)
+                .find('.manga_detail li:has(label:contains("' + authorMarker[languageId] + '")) a')
+                .toArray()
+            ;
+            let writers = anchors.map(a => $(a).text().trim());
+            return writers;
+        }
+
+        async getArtists() {
+            let languageId = this.getLanguageId();
+            // spanish mirror has no artist data, try to use english one
+            if (languageId === 'es') {
+                let enManga = await this.site.getMangaById('en!' + this.getId().split('!')[1]);
+                if (enManga === null) {
+                    return [];
+                }
+                return enManga.getArtists();
+            }
+            let anchors = $(this.document)
+                .find('.manga_detail li:has(label:contains("' + artistMarker[languageId] + '")) a')
+                .toArray()
+            ;
+            let artists = anchors.map(a => $(a).text().trim());
+            return artists;
+        }
+
+        getSummaryParagraphs() {
+            let summary = $(this.document)
+                .find('#show')
+                .clone()
+            ;
+            summary.find('a').remove();
+            summary = summary.text()
+                .trim()
+            ;
+            if (summary.length === 0) {
+                return [];
+            }
+            let summaryParagraphs = summary
+                .split('\n\n')
+                .map(sp => sp.replace('\n', ' ').trim())
+            ;
+            return summaryParagraphs;
         }
 
         getChapterById(id) {
