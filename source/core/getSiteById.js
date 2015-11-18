@@ -1,21 +1,19 @@
 'use strict';
 
 modules.define(async (require) => {
+    let siteIds = await require('siteIds.js');
+
     let sites = new Map();
 
-    for (let id of await require('siteIds.js')) {
-        sites.set(id, async () => {
-            let site = await require(`sites/${id}/site.js`);
-            sites.set(id, () => site);
-            return site;
-        })
-    }
-
     return async function getSiteById(id) {
-        if (!sites.has(id)) {
+        if (!siteIds.has(id)) {
             return null;
         }
-        let site = await sites.get(id)();
+        let site = sites.get(id);
+        if (site === undefined) {
+            site = await require(`sites/${id}/site.js`);
+            sites.set(id, site);
+        }
         return site;
     };
 });
