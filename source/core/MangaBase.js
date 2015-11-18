@@ -21,6 +21,7 @@ modules.define(async (require) => {
             }
             return languages.get(languageId);
         }
+        async getStatus() { return null; }
         async getWriters() { return []; }
         async getArtists() { return []; }
         async getSummaryParagraphs() { return []; }

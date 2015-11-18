@@ -34,6 +34,12 @@
       <p>{{manga.language}}</p>
     </div>
 
+    <div ng-if="manga.status !== null">
+      <h3>Status:</h3>
+      <p ng-if="manga.status === 'ongoing'">Ongoing</p>
+      <p ng-if="manga.status === 'complete'">Complete</p>
+    </div>
+
     <div ng-if="manga.writers.length > 0">
       <h3>Writer(s):</h3>
       <ul>

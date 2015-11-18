@@ -30,6 +30,7 @@ modules.define(async (require) => {
                 alternativeTitles: await manga.getAlternativeTitles(),
                 coverImageUri: await manga.getCoverImageUri(),
                 language: await manga.getLanguage(),
+                status: await manga.getStatus(),
                 writers: await manga.getWriters(),
                 artists: await manga.getArtists(),
                 summaryParagraphs: await manga.getSummaryParagraphs(),

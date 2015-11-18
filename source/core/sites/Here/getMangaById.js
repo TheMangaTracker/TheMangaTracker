@@ -14,6 +14,20 @@ modules.define(async (require) => {
         ['es']: 'Nombre Alternativo:',
     };
 
+    let statusMarker = {
+        ['en']: 'Status:',
+        ['es']: 'Estado:',
+    };
+
+    let normalizedStatus = {
+        // en
+        ['Ongoing']: 'ongoing',
+        ['Completed']: 'complete',
+        // es
+        ['En desarrollo']: 'ongoing',
+        ['Terminado']: 'complete',
+    };
+
     let authorMarker = {
         ['en']: 'Author(s):',
         ['es']: 'Autor(s):',
@@ -254,6 +268,16 @@ modules.define(async (require) => {
                 return 'en';
             }
             return subdomain;
+        }
+
+        getStatus() {
+            let languageId = this.getLanguageId();
+            let status = $(this.document)
+                .find('.manga_detail label:contains("' + statusMarker[languageId] + '")')
+                .get(0).nextSibling.nodeValue.trim()
+            ;
+            status = normalizedStatus[status];
+            return status;
         }
 
         getWriters() {
