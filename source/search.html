@@ -1,0 +1,54 @@
+{{=[[ ]]=}}
+<!DOCTYPE html>
+<html ng-controller="page">
+  <head>
+    <script src="/utility/modules.js"></script>
+    <script src="/modules_setup.js"></script>
+    <script src="search.js"></script>
+    <title>Search - [[extensionName]]</title>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <th style="text-align:right">Title:</th>
+        <td>
+          <input type="text" ng-model="title"></input>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:right">Languages:</th>
+        <td>
+          <select multiple style="resize:vertical" ng-model="languageIds">
+            <option ng-repeat="language in languages" value="{{language.id}}">{{language.name}}</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+        <th style="text-align:right">Sites:</th>
+        <td>
+          <select multiple style="resize:vertical" ng-model="siteIds">
+            <option ng-repeat="site in sites" value="{{site.id}}">{{site.name}}</option>
+          </select>
+        </td>
+      </tr>
+
+      <tr>
+        <th></th>
+        <td style="text-align:right">
+          <button ng-click="search()">Search!</button>
+        </td>
+      </tr>
+    </table>
+
+    <hr>
+
+    <ol>
+      <li ng-repeat="manga in mangas track by $index">
+        <a href="chapters.html?{{manga.site.id}}/{{manga.id}}">{{manga.title}}</a>
+      </li>
+    </ol>
+
+    <div id="bottom"></div>
+  </body>
+</html>
+

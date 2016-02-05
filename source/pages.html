@@ -1,0 +1,25 @@
+{{=[[ ]]=}}
+<!DOCTYPE html>
+<html ng-controller="page">
+  <head>
+    <script src="/utility/modules.js"></script>
+    <script src="/modules_setup.js"></script>
+    <script src="pages.js"></script>
+    <title ng-if="chapter === null">Pages - [[extensionName]]</title>
+    <title ng-if="chapter !== null">{{chapter.title}} Pages - [[extensionName]]</title>
+  </head>
+  <body ng-if="chapter !== null">
+
+    <a href="{{chapter.uri}}">
+      <h1>{{chapter.title}}</h1>
+    </a>
+
+    <div ng-repeat="page in chapter.pages track by $index">
+      <a href="{{page.uri}}">
+        <img ng-src="{{page.imageUri}}" alt="{{page.id}}">
+      </a>
+    </div>
+
+  </body>
+</html>
+

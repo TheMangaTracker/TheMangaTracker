@@ -2,9 +2,8 @@
 
 modules.define(async (require) => {
     let ng = await require('angular');
-
-
-    let getSiteById = await require('/core/getSiteById.js');
+    let languages = await require('/utility/languages.js');
+    let sites = await require('/sites.js');
 
     let page = ng.module('page', []);
 
@@ -14,43 +13,38 @@ modules.define(async (require) => {
         $compileProvider.aHrefSanitizationWhitelist(/^\s*(https?|ftp|mailto|chrome-extension):/);
     }])
 
-    page.controller('page', $scope => {
+    page.controller('page', [
+        '$scope',
+       ( $scope ) => {
         let [siteId, mangaId] = location.search.slice(1).split('/');
        
         $scope.manga = null;
         (async () => {
-            let site = await getSiteById(siteId);
-            let manga = await site.getMangaById(mangaId);
+            let manga = await sites[siteId].getMangaById(mangaId);
 
-            let _manga = {
-                site: { id: await site.getId() },
+            let viewManga = {
+                site: { id: await manga.site.getId() },
                 id: await manga.getId(),
                 uri: await manga.getUri(),
+                language: languages.get(await manga.getLanguageId()),
                 title: await manga.getTitle(),
-                alternativeTitles: await manga.getAlternativeTitles(),
-                coverImageUri: await manga.getCoverImageUri(),
-                language: await manga.getLanguage(),
-                status: await manga.getStatus(),
-                writers: await manga.getWriters(),
-                artists: await manga.getArtists(),
-                summaryParagraphs: await manga.getSummaryParagraphs(),
                 chapters: [],
             };
             $scope.$apply(() => {
-                $scope.manga = _manga;
+                $scope.manga = viewManga;
             });
-            for (let chapter = await manga.getLastChapter(), i = 0; chapter !== null; chapter = await chapter.getPreviousChapter(), ++i) {
+            for (let chapter = await manga.getLastChapter(), i = 0; chapter !== null; chapter = await chapter.getPrevious(), ++i) {
                 let j = i;
-                let _chapter = {
+                let viewChapter = {
                     id: await chapter.getId(),
                     title: await chapter.getTitle(),
                 };
                 $scope.$apply(() => {
-                    _manga.chapters[j] = _chapter;
+                    viewManga.chapters[j] = viewChapter;
                 });
             }
         })();
-    });
+    }]);
 
     ng.element(document).ready(() => {
         ng.bootstrap(document, ['page']);    

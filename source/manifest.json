@@ -8,9 +8,9 @@
     "icons": { "{{{icon.size}}}": "{{{icon.path}}}" },
 
     "permissions": [
-        {{#hosts}}
-            "*://*.{{{.}}}/*",
-        {{/hosts}}
+        {{#accessedUris}}
+            "{{{.}}}",
+        {{/accessedUris}}
 
         "storage"
     ],

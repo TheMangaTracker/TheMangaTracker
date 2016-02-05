@@ -1,0 +1,27 @@
+{{=[[ ]]=}}
+<!DOCTYPE html>
+<html ng-controller="page">
+  <head>
+    <script src="/utility/modules.js"></script>
+    <script src="/modules_setup.js"></script>
+    <script src="chapters.js"></script>
+    <title ng-if="manga === null">Chapters - [[extensionName]]</title>
+    <title ng-if="manga !== null">{{manga.title}} Chapters - [[extensionName]]</title>
+  </head>
+  <body ng-if="manga !== null">
+
+    <a href="{{manga.uri}}">
+      <h1>{{manga.title}}</h1>
+    </a>
+
+    <p>{{manga.language}}</p>
+
+    <ul>
+      <li ng-repeat="chapter in manga.chapters track by $index">
+        <a href="pages.html?{{manga.site.id}}/{{manga.id}}/{{chapter.id}}">{{chapter.title}}</a>
+      </li>
+    </ul>
+
+  </body>
+</html>
+

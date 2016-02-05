@@ -23,7 +23,7 @@
         }
     });
     chrome.browserAction.onClicked.addListener(function(_tab) {
-        chrome.tabs.create({ url: chrome.extension.getURL('search_query.html') });
+        chrome.tabs.create({ url: chrome.extension.getURL('search.html') });
     });
 
 })();
