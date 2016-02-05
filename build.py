@@ -6,8 +6,19 @@ from buildtools import *
 
 extension = read_yaml('extension.yaml')
 
+def load_site_paths(path):
+    path = Path(path)
+    if (path / 'sites.yaml').exists():
+        for subpath in read_yaml(path / 'sites.yaml'):
+            yield load_site_paths(path / subpath)
+    else:
+        assert (path / 'site.js').exists()
+        assert (path / 'accessedUris.yaml').exists()
+        yield path
+site_paths = [p.relative_to('sites') for p in glob('sites/*/') for pp in load_site_paths(p)]
+
 render('sites.js', {
-    'sites': [s.parent.name for s in glob('sites/*/sites.js')],
+    'paths': site_paths,
 })
 
 for view in ['search.html', 'chapters.html', 'pages.html']:
@@ -23,7 +34,7 @@ render('manifest.json', {
         'path': '/icon.png',
         'size': get_image_size('icon.png'),
     },
-    'accessedUris': {uri for uris in glob('sites/*/accessedUris.yaml') for uri in read_yaml(uris)},
+    'accessedUris': {u for p in site_paths for u in read_yaml('sites' / p / 'accessedUris.yaml')},
 })
 
 for p in glob('**/*.js'):

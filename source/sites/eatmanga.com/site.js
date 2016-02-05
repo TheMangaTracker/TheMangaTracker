@@ -3,7 +3,7 @@
 modules.define(async (require) => {
     let AsyncStream = await require('/utility/AsyncStream.js');
 
-    return [{
+    return {
         getId: () => 'Eat-Manga',
 
         getUri: () => 'http://eatmanga.com',
@@ -25,5 +25,5 @@ modules.define(async (require) => {
                 return node;
             });
         },
-    }];
+    };
 });
