@@ -4,18 +4,12 @@ modules.define(async (require) => {
     let $ = await require('jQuery');
     let http = await require('/utility/http.js');
     let AsyncStream = await require('/utility/AsyncStream.js');
-    let mangaProto = await require('./mangaProto.js');
 
     return function findMangas(query) {
         return AsyncStream.fromEmitter(async (emit) => {
             if (!query.languageIds.has('en')) {
                 return;
             }
-
-            let titleTester = query.title
-              .toLowerCase()
-              .replace(/[^0-9A-Za-z]+/g, '.*');
-            titleTester = new RegExp(titleTester, 'i');
 
             let uri = new URL('/Manga-Scan/', this.getUri()).href;
             let document = await http.getHtml(uri);
@@ -24,18 +18,15 @@ modules.define(async (require) => {
               .toArray();
             for (let anchor of anchors) {
                 let title = $(anchor).text();
-                if (!titleTester.test(title)) {
+                if (!query.titleMatches(title)) {
                     continue;
                 }
 
-                let manga = { __proto__: mangaProto,
+                let uri = $(anchor).prop('href');
+
+                let manga = { __proto__: await require('./mangaProto.js'),
                     site: this,
-
-                    getUri() {
-                        let uri = $(anchor).prop('href');
-                        return uri;
-                    },
-
+                    getUri: () => uri,
                     getTitle: () => title,
                 };
 

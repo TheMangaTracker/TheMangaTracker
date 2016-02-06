@@ -8,10 +8,10 @@ modules.define(async (require) => {
 
                 xhr.addEventListener('error', reject);
                 xhr.addEventListener('load', () => {
-                    if (xhr.statusText !== 'OK') {
-                        reject(new Error(xhr.statusText));
-                    } else {
+                    if (xhr.statusText === 'OK') {
                         resolve(xhr.response);
+                    } else {
+                        resolve(null);
                     }
                 });
 

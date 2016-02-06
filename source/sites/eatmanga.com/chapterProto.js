@@ -25,12 +25,13 @@ modules.define(async (require) => {
             return uri;
         },
 
-        getTitle() {
-            let mangaTitle = this.manga.getTitle();
+        getTitle: async function() {
+            let mangaTitle = await this.manga.getTitle();
 
             let title = $(this._anchor).text();
             while (title[0] === mangaTitle[0]) {
                 title = title.slice(1);
+                mangaTitle = mangaTitle.slice(1);
             }
             title = title.replace(/^ +/, '');
 

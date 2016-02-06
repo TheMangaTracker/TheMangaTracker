@@ -45,10 +45,17 @@ modules.define(async (require) => {
         $scope.siteIds = viewSites.map(s => s.id);
         
         $scope.search = function search() {
-            let query = {
-                title: $scope.title,
-                languageIds: new Set($scope.languageIds),
-            };
+            let query = {};
+
+            query.title = $scope.title.trim();
+
+            let titleTester = query.title
+              .toLowerCase()
+              .replace(/[^0-9A-Za-z]+/g, '.*');
+            titleTester = new RegExp(titleTester, 'i');
+            query.titleMatches = (title) => titleTester.test(title);
+
+            query.languageIds = new Set($scope.languageIds);
 
             let mangas = AsyncStream.fromIterable($scope.siteIds)
               .map(id => sites[id].findMangas(query))
