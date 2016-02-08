@@ -74,21 +74,17 @@ var modules = (() => {
         setModule(url, initialize(require));
     }
 
-    function setup(settings) {
-        for (let url in settings) {
-            let setting = settings[url];
+    function alias(mapping) {
+        for (let id in mapping) {
+            let url = mapping[id];
             url = new URL(url, document.baseURI).href;
-            if ('aliasId' in setting) {
-                aliasIdUrls.set(setting.aliasId, url); 
-            }
-            if ('globalExport' in setting) {
-                urlGlobalExports.set(url, setting.globalExport);
-            }
+            aliasIdUrls.set(id, url); 
+            urlGlobalExports.set(url, id);
         }
     }
 
     return {
         define,
-        setup,
+        alias,
     };
 })();

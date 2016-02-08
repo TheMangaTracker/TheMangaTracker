@@ -3,10 +3,10 @@
 <html ng-controller="page">
   <head>
     <script src="/utility/modules.js"></script>
-    <script src="/modules_setup.js"></script>
+    <script src="/thirdparty.js"></script>
     <script src="pages.js"></script>
-    <title ng-if="chapter === null">Pages - [[extensionName]]</title>
-    <title ng-if="chapter !== null">{{chapter.title}} Pages - [[extensionName]]</title>
+    <title ng-if="chapter === null">Pages - [[name]]</title>
+    <title ng-if="chapter !== null">{{chapter.title}} Pages - [[name]]</title>
   </head>
   <body ng-if="chapter !== null">
 
