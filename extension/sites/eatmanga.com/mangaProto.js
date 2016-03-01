@@ -20,7 +20,7 @@ modules.define(async (require) => {
 
         getLanguageId: () => 'en',
 
-        getTitle: async function() {
+        async getTitle() {
             let document = await this._getDocument();
             let title = $(document)
               .find('#main_content p.tip b')
@@ -29,7 +29,7 @@ modules.define(async (require) => {
             return title;
         },
 
-        getChapterById: async function(id) {
+        async getChapterById(id) {
             let document = await this._getDocument();
             let anchors = $(document)
               .find('#updates th a')
@@ -60,7 +60,7 @@ modules.define(async (require) => {
             }).join('\n') + '.\n');
         },
 
-        getFirstChapter: async function() {
+        async getFirstChapter() {
             let document = await this._getDocument();
             let firstAnchor = $(document)
               .find('#updates th a')
@@ -78,7 +78,7 @@ modules.define(async (require) => {
             return firstChapter;
         },
 
-        getLastChapter: async function() {
+        async getLastChapter() {
             let document = await this._getDocument();
             let lastAnchor = $(document)
               .find('#updates th a')
@@ -96,7 +96,7 @@ modules.define(async (require) => {
             return lastChapter;
         },
 
-        _getDocument: async function() {
+        async _getDocument() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             this._getDocument = () => document;

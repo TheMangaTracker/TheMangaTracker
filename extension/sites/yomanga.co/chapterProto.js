@@ -22,7 +22,7 @@ modules.define(async (require) => {
             return title;
         },
 
-        getPageById: async function(id) {
+        async getPageById(id) {
             let document = await this._getDocument();
             let anchor = $(document)
               .find('div.topbar_right ul.dropdown a')
@@ -40,7 +40,7 @@ modules.define(async (require) => {
             return page;
         },
 
-        getFirstPage: async function() {
+        async getFirstPage() {
             let document = await this._getDocument();
             let firstAnchor = $(document)
               .find('div.topbar_right ul.dropdown a')
@@ -57,7 +57,7 @@ modules.define(async (require) => {
             return firstPage;
         },
 
-        getLastPage: async function() {
+        async getLastPage() {
             let document = await this._getDocument();
             let lastAnchor = $(document)
               .find('div.topbar_right ul.dropdown a')
@@ -112,7 +112,7 @@ modules.define(async (require) => {
             return nextChapter;
         },
 
-        _getDocument: async function() {
+        async _getDocument() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             this._getDocument = () => document;

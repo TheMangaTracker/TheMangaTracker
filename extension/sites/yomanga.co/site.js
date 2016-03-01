@@ -12,7 +12,7 @@ modules.define(async (require) => {
 
         getIconUri: () => 'http://yomanga.co/android-chrome-192x192.png',
 
-        getMangaById: async function(id) {
+        async getMangaById(id) {
             this.getMangaById = await require('getMangaById.js');
             let manga = await this.getMangaById(id);
             return manga;

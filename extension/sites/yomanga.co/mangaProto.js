@@ -17,7 +17,7 @@ modules.define(async (require) => {
             return this.site._languageId;
         },
 
-        getTitle: async function() {
+        async getTitle() {
             let document = await this._getDocument();
             let title = $(document)
               .find('div.comic.info h1.title')
@@ -26,7 +26,7 @@ modules.define(async (require) => {
             return title;
         },
 
-        getChapterById: async function(id) {
+        async getChapterById(id) {
             let document = await this._getDocument();
             let anchors = $(document)
               .find('div.list div.element div.title a')
@@ -57,7 +57,7 @@ modules.define(async (require) => {
             }).join('\n') + '.\n');
         },
 
-        getFirstChapter: async function() {
+        async getFirstChapter() {
             let document = await this._getDocument();
             let firstAnchor = $(document)
               .find('div.list div.element div.title a')
@@ -74,7 +74,7 @@ modules.define(async (require) => {
             return firstChapter;
         },
 
-        getLastChapter: async function() {
+        async getLastChapter() {
             let document = await this._getDocument();
             let lastAnchor = $(document)
               .find('div.list div.element div.title a')
@@ -91,7 +91,7 @@ modules.define(async (require) => {
             return lastChapter;
         },
 
-        _getDocument: async function() {
+        async _getDocument() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             this._getDocument = () => document;

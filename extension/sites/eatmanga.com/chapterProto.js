@@ -25,7 +25,7 @@ modules.define(async (require) => {
             return uri;
         },
 
-        getTitle: async function() {
+        async getTitle() {
             let mangaTitle = await this.manga.getTitle();
 
             let title = $(this._anchor).text();
@@ -38,7 +38,7 @@ modules.define(async (require) => {
             return title;
         },
 
-        getPageById: async function(id) {
+        async getPageById(id) {
             if (id === '1') {
                 id = '';
             } else {
@@ -62,7 +62,7 @@ modules.define(async (require) => {
             return page;
         },
 
-        getFirstPage: async function() {
+        async getFirstPage() {
             let document = await this._getDocument();
             let firstOption = $(document)
               .find('#pages option')
@@ -79,7 +79,7 @@ modules.define(async (require) => {
             return firstPage;
         },
 
-        getLastPage: async function() {
+        async getLastPage() {
             let document = await this._getDocument();
             let lastOption = $(document)
               .find('#pages option')
@@ -136,7 +136,7 @@ modules.define(async (require) => {
             return nextChapter;
         },
 
-        _getDocument: async function() {
+        async _getDocument() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             this._getDocument = () => document;
