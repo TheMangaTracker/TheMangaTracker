@@ -16,7 +16,7 @@ modules.define(async (require) => {
             return uri;
         },
 
-        getImageUri: async function() {
+        async getImageUri() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             let imageUri = $(document)

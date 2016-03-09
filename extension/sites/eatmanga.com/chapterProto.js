@@ -6,8 +6,17 @@ modules.define(async (require) => {
 
     return {
         getId() {
+            let mangaId = this.manga.getId();
+
             let uri = this.getUri();
-            let id = /\/(\d+)\/$/.exec(uri)[1];
+            let id = /\/([^\/]+)\/$/.exec(uri)[1];
+            while (id[0] === mangaId[0]) {
+                id = id.slice(1);
+                mangaId = mangaId.slice(1);
+            }
+            id = id.replace(/^-+/, '');
+            id = id.replace(/^0+(?=\d)/, '');
+
             return id;
         },
 
@@ -16,59 +25,72 @@ modules.define(async (require) => {
             return uri;
         },
 
-        getTitle() {
+        async getTitle() {
+            let mangaTitle = await this.manga.getTitle();
+
             let title = $(this._anchor).text();
-            title = title.replace(/^Chapter */, '');
+            while (title[0] === mangaTitle[0]) {
+                title = title.slice(1);
+                mangaTitle = mangaTitle.slice(1);
+            }
+            title = title.replace(/^ +/, '');
+
             return title;
         },
 
-        getPageById: async function(id) {
+        async getPageById(id) {
+            if (id === '1') {
+                id = '';
+            } else {
+                id = 'page-' + id;
+            }
+
             let document = await this._getDocument();
-            let anchor = $(document)
-              .find('div.topbar_right ul.dropdown a')
-              .filter((_, anchor) => anchor.href.endsWith('/' + id))
+            let option = $(document)
+              .find('#pages option')
+              .filter((_, option) => option.value.endsWith('/' + id))
               .get(0);
-            if (anchor === undefined) {
+            if (option === undefined) {
                 return null;
             }
 
             let page = { __proto__: await require('./pageProto.js'),
                 chapter: this,
-                _anchor: anchor,
+                _option: option,
             };
 
             return page;
         },
 
-        getFirstPage: async function() {
+        async getFirstPage() {
             let document = await this._getDocument();
-            let firstAnchor = $(document)
-              .find('div.topbar_right ul.dropdown a')
+            let firstOption = $(document)
+              .find('#pages option')
               .get(0);
-            if (firstAnchor === undefined) {
+            if (firstOption === undefined) {
                 return null;
             }
 
             let firstPage = { __proto__: await require('./pageProto.js'),
                 chapter: this,
-                _anchor: firstAnchor,
+                _option: firstOption,
             };
 
             return firstPage;
         },
 
-        getLastPage: async function() {
+        async getLastPage() {
             let document = await this._getDocument();
-            let lastAnchor = $(document)
-              .find('div.topbar_right ul.dropdown a')
+            let lastOption = $(document)
+              .find('#pages option')
               .get(-1);
-            if (lastAnchor === undefined) {
+            if (lastOption === undefined) {
                 return null;
             }
 
             let lastPage = { __proto__: await require('./pageProto.js'),
                 chapter: this,
-                _anchor: lastAnchor,
+                _option: lastOption,
             };
 
             return lastPage;
@@ -76,10 +98,11 @@ modules.define(async (require) => {
 
         getPrevious() {
             let previousAnchor = $(this._anchor)
-              .parents('div.element')
+              .parents('tr')
               .eq(0)
-              .next()
-              .find('div.title a')
+              .nextAll()
+              .find('th a')
+              .filter((_, anchor) => $(anchor).attr('href').startsWith('/Manga-Scan/'))
               .get(0);
             if (previousAnchor === undefined) {
                 return null;
@@ -95,10 +118,11 @@ modules.define(async (require) => {
 
         getNext() {
             let nextAnchor = $(this._anchor)
-              .parents('div.element')
+              .parents('tr')
               .eq(0)
-              .prev()
-              .find('div.title a')
+              .prevAll()
+              .find('th a')
+              .filter((_, anchor) => $(anchor).attr('href').startsWith('/Manga-Scan/'))
               .get(0);
             if (nextAnchor === undefined) {
                 return null;
@@ -112,7 +136,7 @@ modules.define(async (require) => {
             return nextChapter;
         },
 
-        _getDocument: async function() {
+        async _getDocument() {
             let uri = this.getUri();
             let document = await http.getHtml(uri);
             this._getDocument = () => document;

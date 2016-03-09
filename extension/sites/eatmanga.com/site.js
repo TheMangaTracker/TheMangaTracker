@@ -12,7 +12,7 @@ modules.define(async (require) => {
 
         getIconUri: () => 'http://cdn.eatmanga.com/media/favicon.png',
 
-        getMangaById: async function (id) {
+        async getMangaById(id) {
             this.getMangaById = await require('./getMangaById.js');
             let manga = await this.getMangaById(id);
             return manga;
