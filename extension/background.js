@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let manifest = chrome.runtime.getManifest();
 
     chrome.browserAction.setTitle({ title: manifest.name });

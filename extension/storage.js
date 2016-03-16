@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let groupId = await new Promise((resolve, reject) => {
         function walk(parent, nodes) {
             for (let node of nodes) {

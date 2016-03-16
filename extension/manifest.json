@@ -8,7 +8,7 @@
     "background": {
         "persistent": false,
         "scripts": [
-            "/utility/modules.js",
+            "/utility/define.js",
             "/thirdparty.js",
             "background.js"
         ]
