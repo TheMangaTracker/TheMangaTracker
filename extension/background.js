@@ -1,29 +1,30 @@
-(function() {
-    'use strict';
+'use strict';
 
-    var manifest = chrome.runtime.getManifest();
+modules.define(async (require) => {
+    let manifest = chrome.runtime.getManifest();
 
     chrome.browserAction.setTitle({ title: manifest.name });
-    var get_icon_for = function(desired_size) {
-        var max_size = undefined;
-        for (var size in manifest.icons) {
-            if (Number(size) == desired_size) {
+    function getIconFor(perfectSize) {
+        let maxSize = undefined;
+        for (let size in manifest.icons) {
+            size = parseInt(size);
+            if (size === perfectSize) {
                 return manifest.icons[size];    
             }
-            if (max_size === undefined || Number(size) > Number(max_size)) {
-                max_size = size
+
+            if (maxSize === undefined || size > maxSize) {
+                maxSize = size
             }
         }    
-        return manifest.icons[max_size];
+        return manifest.icons[maxSize];
     };
     chrome.browserAction.setIcon({
         path: {
-            '19': get_icon_for(19),
-            '38': get_icon_for(38),
+            '19': getIconFor(19),
+            '38': getIconFor(38),
         }
     });
-    chrome.browserAction.onClicked.addListener(function(_tab) {
+    chrome.browserAction.onClicked.addListener(tab => {
         chrome.tabs.create({ url: chrome.extension.getURL('search.html') });
     });
-
-})();
+});
