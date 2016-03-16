@@ -1,8 +1,8 @@
 'use strict';
 
-modules.define(async (require) => {
-    let ng = await require('angular');
-    let $ = await require('jQuery');
+define(async (require) => {
+    let ng = await require('/thirdparty/angular.js');
+    let $ = await require('/thirdparty/jQuery.js');
     let AsyncStream = await require('/utility/AsyncStream.js');
     let languages = await require('/utility/languages.js');
     let sites = await require('/sites.js');

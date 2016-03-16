@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let http = await require('/utility/http.js');
 
     return async function getMangaById(id) {
@@ -10,7 +10,7 @@ modules.define(async (require) => {
             return null;
         }
 
-        let manga = { __proto__: await require('./mangaProto.js'),
+        let manga = { __proto__: await require('mangaProto.js'),
             site: this,
             getId: () => id,
             getUri: () => uri,

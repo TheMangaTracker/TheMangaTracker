@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     class AsyncStream {
         constructor(evaluate) {
             this.evaluate = () => {

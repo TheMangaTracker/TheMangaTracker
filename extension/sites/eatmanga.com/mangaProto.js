@@ -1,7 +1,7 @@
 'use strict';
 
-modules.define(async (require) => {
-    let $ = await require('jQuery');
+define(async (require) => {
+    let $ = await require('/thirdparty/jQuery.js');
     let http = await require('/utility/http.js');
 
     return {
@@ -36,7 +36,7 @@ modules.define(async (require) => {
               .toArray();
             let chapters = [];
             for (let anchor of anchors) {
-                let chapter = { __proto__: await require('./chapterProto.js'),
+                let chapter = { __proto__: await require('chapterProto.js'),
                     manga: this,
                     _anchor: anchor,
                 };
@@ -70,7 +70,7 @@ modules.define(async (require) => {
                 return null;
             }
 
-            let firstChapter = { __proto__: await require('./chapterProto.js'),
+            let firstChapter = { __proto__: await require('chapterProto.js'),
                 manga: this,
                 _anchor: firstAnchor,
             };
@@ -88,7 +88,7 @@ modules.define(async (require) => {
                 return null;
             }
 
-            let lastChapter = { __proto__: await require('./chapterProto.js'),
+            let lastChapter = { __proto__: await require('chapterProto.js'),
                 manga: this,
                 _anchor: lastAnchor,
             };

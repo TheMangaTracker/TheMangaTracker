@@ -1,7 +1,7 @@
 'use strict';
 
-modules.define(async (require) => {
-    let ng = await require('angular');
+define(async (require) => {
+    let ng = await require('/thirdparty/angular.js');
     let languages = await require('/utility/languages.js');
     let sites = await require('/sites.js');
 

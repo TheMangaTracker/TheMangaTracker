@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let sites = { __proto__: null,
         *[Symbol.iterator]() {
             for (let id in this) {

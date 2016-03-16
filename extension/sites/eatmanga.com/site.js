@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let AsyncStream = await require('/utility/AsyncStream.js');
 
     return {

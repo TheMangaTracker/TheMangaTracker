@@ -1,7 +1,7 @@
 'use strict';
 
-modules.define(async (require) => {
-    let $ = await require('jQuery');
+define(async (require) => {
+    let $ = await require('/thirdparty/jQuery.js');
     let http = await require('/utility/http.js');
 
     return {
@@ -54,7 +54,7 @@ modules.define(async (require) => {
                 return null;
             }
 
-            let page = { __proto__: await require('./pageProto.js'),
+            let page = { __proto__: await require('pageProto.js'),
                 chapter: this,
                 _option: option,
             };
@@ -71,7 +71,7 @@ modules.define(async (require) => {
                 return null;
             }
 
-            let firstPage = { __proto__: await require('./pageProto.js'),
+            let firstPage = { __proto__: await require('pageProto.js'),
                 chapter: this,
                 _option: firstOption,
             };
@@ -88,7 +88,7 @@ modules.define(async (require) => {
                 return null;
             }
 
-            let lastPage = { __proto__: await require('./pageProto.js'),
+            let lastPage = { __proto__: await require('pageProto.js'),
                 chapter: this,
                 _option: lastOption,
             };

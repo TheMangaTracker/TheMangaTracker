@@ -1,7 +1,7 @@
 'use strict';
 
-modules.define(async (require) => {
-    let $ = await require('jQuery');
+define(async (require) => {
+    let $ = await require('/thirdparty/jQuery.js');
     let http = await require('/utility/http.js');
     let AsyncStream = await require('/utility/AsyncStream.js');
 
@@ -24,7 +24,7 @@ modules.define(async (require) => {
 
                 let uri = $(anchor).prop('href');
 
-                let manga = { __proto__: await require('./mangaProto.js'),
+                let manga = { __proto__: await require('mangaProto.js'),
                     site: this,
                     getUri: () => uri,
                     getTitle: () => title,

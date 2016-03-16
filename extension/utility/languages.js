@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     let languages = new Map([
         ["ab", "Abkhaz"],
         ["aa", "Afar"],

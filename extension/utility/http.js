@@ -1,6 +1,6 @@
 'use strict';
 
-modules.define(async (require) => {
+define(async (require) => {
     return {
         getHtml(uri) {
             return new Promise((resolve, reject) => {
